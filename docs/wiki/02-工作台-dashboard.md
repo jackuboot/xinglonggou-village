@@ -16,13 +16,13 @@ src/
     每区独立 Shell + pages + routes.js，互不引用
 ```
 
-**核心层关键文件**：`cloudbase.js`（SDK 封装）、`config.js`（全站唯一配置点：环境 ID、官网地址、品牌信息）、`roles.js`（角色唯一数据源）、`db.js`（当前用户授权读取，走云函数 `roles-admin` 的 `me` action）、`composables/useAuth.js`（登录态）、`useToast.js`、公共组件（StatCard / EmptyState / Icon / RoleHome）。
+**核心层关键文件**：`cloudbase.js`（SDK 封装）、`config.js`（全站唯一配置点：环境 ID、官网地址、品牌信息）、`roles.js`（角色唯一数据源）、`db.js`（当前用户授权读取，走云函数 `roles-admin` 的 `me` action）、`composables/useAuth.js`（登录态；凭据读取一律在 SDK 回调链之外执行，规避 js-sdk v3.10.2 事件环卡死缺陷——改造时勿在 onLoginStateChanged 回调内调用凭据读取 API，详见文件内注释）、`useToast.js`、公共组件（StatCard / EmptyState / Icon / RoleHome）。
 
 ## 路由与懒加载（src/router.js）
 
 - `router.js` 只做「组合」：公共流程页（`/login`、`/select`、`/no-access`）+ 五个角色分区路由，各区路由独立维护在 `src/apps/<角色>/routes.js`。
 - **按区懒加载**：所有页面均为动态 `import()`，Vite 自动按区分包。用户进入哪个工作台只下载哪个工作台的代码；普通角色浏览器永远不会加载管理后台代码。
-- 登录守卫：未登录一律跳 `/login`；等待登录态与角色恢复各设 3 秒上限（避免误踢与死等）；已登录访问 public 页时重定向到 `/select`（含自指重定向兜底）。
+- 登录守卫：未登录一律跳 `/login`；等待登录态与角色恢复各设 3 秒上限，超时语义不同——登录态恢复超时按未登录处理（踢到 `/login`），角色加载超时则带当前已恢复的 roles 继续放行（角色仍缺失时由分区校验拒到 `/no-access`）；已登录访问 public 页时重定向到 `/select`（含自指重定向兜底）。
 - 越权防护双保险：路由守卫校验 `meta.role` / `meta.adminOnly` + 云函数服务端鉴权。
 
 ## 各角色分区页面（当前实际路由）
@@ -43,6 +43,9 @@ MVP 阶段多数业务页为 `placeholder()` 占位页（`src/gateway/placeholde
 2. 登录成功 → 统一进入 `/select`（选择工作台页；`defaultHome()` 对所有有效角色都返回 `/select`，支持一人多角色）。
 3. 无任何有效角色的异常态回 `/login`；越权访问 → `/no-access`。
 
+> 端到端时序（启动恢复 → 验证码登录 → 守卫进入 → 退出）见 [../architecture/login-auth-flow.puml](../architecture/login-auth-flow.puml)，逐段代码证据见 [flow-evidence.md](../architecture/flow-evidence.md)。
+
 ## 同步记录
 
 - 2026-10-16 初始生成，基于 commit 6819374。
+- 2026-10-16 同步至 fcea830：补充守卫 3 秒超时的差异化语义与 useAuth 回调链约束，链接登录时序图（docs/architecture/）。
