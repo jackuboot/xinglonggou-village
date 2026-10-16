@@ -6,8 +6,11 @@
   "description": "兴隆沟村乡村振兴数字工作台（Vue 3 + Vite + CloudBase）",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node ../scripts/check-design.cjs",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:design": "node ../scripts/check-design.cjs",
+    "test:design": "node --test ../scripts/design-system.test.cjs"
   },
   "dependencies": {
     "@cloudbase/js-sdk": "^3.10.2",

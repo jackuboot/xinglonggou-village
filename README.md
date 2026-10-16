@@ -1,6 +1,6 @@
 # 兴隆沟村乡村振兴平台
 
-以「农户内容 D2C · 数字化管理」为核心的乡村振兴平台，由两个完全独立的子项目组成（无共享代码与依赖）：
+以「农户内容 D2C · 数字化管理」为核心的乡村振兴平台，由两个独立运行、分别部署的子项目组成。设计源与开发期检查统一维护在仓库根目录，生成资源分别打包，无跨应用运行时依赖：
 
 | 子项目 | 定位 | 技术栈 | 在线地址 |
 | --- | --- | --- | --- |
@@ -26,6 +26,17 @@ cd dashboard && npm install && npm run dev                  # http://localhost:5
 ```
 
 更多本地开发说明见 [GitHub Wiki · 快速开始](https://github.com/jackuboot/xinglonggou-village/wiki)。
+
+## 设计规范与质量检查
+
+颜色、图标、布局、响应式、交互的唯一规范见 [设计系统](design-system/MASTER.md)，可打开 [组件与颜色样本](design-system/catalog.html)，实际检查结果见 [验证记录](design-system/verification.md)。构建请保留完整仓库，两个构建入口都会执行根目录设计门禁。
+
+```sh
+npm run design:sync   # 修改 design-system/tokens.json 或 icons.json 后生成资源
+npm run check        # 快照/颜色/图标/对比度门禁 + 单元测试 + 两端构建
+```
+
+不要手改生成的 tokens.css、图标清单或 dist。角色主题统一登记，但角色导航、权限和业务逻辑仍独立维护。推送与 PR 会触发设计检查；不会自动部署。
 
 ## 部署
 

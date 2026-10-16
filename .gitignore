@@ -12,6 +12,7 @@ dev-check-result.txt
 dashboard/scripts/*.png
 dashboard/scripts/*.json
 web/screenshots/
+design-system/reports/
 
 # 系统文件
 .DS_Store

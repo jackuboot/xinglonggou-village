@@ -1,0 +1,13 @@
+{
+  "name": "xinglonggou-design-governance",
+  "private": true,
+  "scripts": {
+    "design:sync": "node scripts/design-system.cjs",
+    "check:design": "node scripts/check-design.cjs",
+    "test": "node --test scripts/design-system.test.cjs",
+    "test:ui": "node scripts/verify-design.mjs",
+    "build:web": "node web/scripts/build.js",
+    "build:dashboard": "npm --prefix dashboard run build",
+    "check": "npm run check:design && npm test && npm run build:web && npm run build:dashboard"
+  }
+}
