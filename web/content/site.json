@@ -1,0 +1,109 @@
+{
+  "_readme": [
+    "本文件是网站全部文字内容的唯一入口：改完保存，然后运行 deploy.ps1 即可自动构建并上线。",
+    "注意：必须是合法 JSON——所有文字用英文双引号包裹，新增一段时别漏掉上一段末尾的逗号；以 _ 开头的字段（如本说明）不会被网站使用。",
+    "site.nav 的 href 是页面锚点（#home/#about/#industry/#stories/#news/#contact），只改 label 文字，不要改 href。",
+    "icon 字段只能填以下名称：sprout（种植）、camera（拍摄）、coin（收益）、leaf（茶叶）、drop（蜂蜜）、rice（稻米）、veggie（果蔬）、basket（干货）、bottle（油）。",
+    "增删内容：products / stories / news 都是数组，复制一段花括号块修改即新增，删除整块即下线，页面自动重新排版。",
+    "site.url 是官网规范地址（canonical/sitemap 用），绑定新域名后记得同步改这里；",
+    "site.dashboardUrl / site.dashboardLabel 是工作台登录入口（dashboard/ 工程独立部署在 /app/）；",
+    "site.keywords 供搜索引擎关键词；ogImageUrl 与 jsonLd 由构建脚本自动生成，不用填写。"
+  ],
+  "site": {
+    "name": "兴隆沟村",
+    "tagline": "乡村振兴",
+    "title": "兴隆沟村 · 乡村振兴 | 让山里的好东西，走出大山",
+    "description": "兴隆沟村乡村振兴官方网站：以农户内容 D2C 为核心，让农户亲自讲述土地的故事，把原生态山货从田间直送到消费者餐桌。",
+    "slogan": "让山里的好东西，走出大山。",
+    "copyright": "兴隆沟村村委会 · 乡村振兴官方网站",
+    "icpNote": "本站为 MVP 演示版本，内容为示例占位 · 备案信息待补充",
+    "orderLinkText": "联系订购 →",
+    "url": "https://bigfish-2026-d4gixfnab6e09d0f2-1253692163.tcloudbaseapp.com/9e3840e6-7054-452d-b9f5-5462917056e2/",
+    "dashboardUrl": "https://bigfish-2026-d4gixfnab6e09d0f2-1253692163.tcloudbaseapp.com/app/",
+    "dashboardLabel": "登录工作台",
+    "keywords": "兴隆沟村,乡村振兴,助农产品,高山云雾茶,深山土蜂蜜,生态稻米,山货直供,农户故事",
+    "nav": [
+      { "label": "首页", "href": "#home" },
+      { "label": "乡村介绍", "href": "#about" },
+      { "label": "特色产业", "href": "#industry" },
+      { "label": "农户故事", "href": "#stories" },
+      { "label": "动态资讯", "href": "#news" },
+      { "label": "联系我们", "href": "#contact" }
+    ]
+  },
+  "hero": {
+    "badge": "乡村振兴 · 农户内容 D2C",
+    "title1": "让山里的好东西",
+    "title2": "走出大山",
+    "subtitle": "兴隆沟村坐落于群山之间。我们让农户亲自讲述土地的故事，把原生态山货从田间直送到你的餐桌。",
+    "primaryCtaText": "探索特色产业",
+    "primaryCtaHref": "#industry",
+    "secondaryCtaText": "合作洽谈",
+    "secondaryCtaHref": "#contact"
+  },
+  "stats": [
+    { "value": 126, "unit": "户", "label": "在册农户" },
+    { "value": 8, "unit": "类", "label": "特色农产品" },
+    { "value": 1200, "unit": "米", "label": "平均海拔" },
+    { "value": 95, "unit": "%", "label": "森林覆盖率" }
+  ],
+  "about": {
+    "kicker": "乡村介绍",
+    "title": "一座被云雾养着的村子",
+    "p1": "兴隆沟村地处连绵群山之间，平均海拔 1200 米，森林覆盖率超过 95%。云雾滋养出高山茶园，山泉灌溉着层层梯田，也养出了一代代守着土地的人。",
+    "p2": "过去，好东西困在山里；今天，我们想让改变发生——不靠层层中间商，而是让农户出现在镜头前、故事里，用最朴素的方式，把信任和山货一起送到你身边。",
+    "badge": "农户直连 · 零中间商",
+    "features": [
+      { "icon": "sprout", "title": "原生态种植", "desc": "坚持不打催熟剂、不滥用农药，遵循自然节律，让作物慢慢长。" },
+      { "icon": "camera", "title": "农户自己讲", "desc": "内容直连，出镜的就是种地的人，产地、人名、时间全部可追溯。" },
+      { "icon": "coin", "title": "收益直达农户", "desc": "去中间化，让每一笔订单都实实在在落到农户手里。" }
+    ]
+  },
+  "industrySection": {
+    "kicker": "特色产业",
+    "title": "山里长出来的好东西",
+    "sub": "每一件山货，背后都有一位具体的人、一片具体的地。"
+  },
+  "products": [
+    { "icon": "leaf", "name": "高山云雾茶", "desc": "清明前后手工采摘，炭火慢焙，一口兰花香。", "tag": "助农主打" },
+    { "icon": "drop", "name": "深山土蜂蜜", "desc": "崖壁蜂箱，一年只取一次，浓稠挂壁。", "tag": "年度限量" },
+    { "icon": "rice", "name": "生态稻米", "desc": "山泉灌溉，稻鸭共生，蒸饭满屋香。", "tag": "新客首选" },
+    { "icon": "veggie", "name": "时令果蔬", "desc": "清晨采摘、当天发出，从菜园到餐桌最快 24 小时。", "tag": "当季鲜品" },
+    { "icon": "basket", "name": "农家干货", "desc": "香菇、笋干、木耳，古法晾晒，山野本味。", "tag": "古法晒制" },
+    { "icon": "bottle", "name": "古法山茶油", "desc": "低温压榨，物理精炼，厨房里的“液体黄金”。", "tag": "复购之王" }
+  ],
+  "storySection": {
+    "kicker": "农户故事",
+    "title": "出镜的，就是种地的人",
+    "sub": "「农户内容 D2C」：农户亲自讲述，信任直达，没有中间环节。",
+    "note": "内容 D2C 模式：农户亲自出镜讲述 → 消费者直接下单 → 收益直达农户。"
+  },
+  "stories": [
+    { "name": "李桂芳", "role": "茶园第三代 · 高山云雾茶", "quote": "“我家那片老茶园，是奶奶一锄头一锄头开出来的。现在我把采茶拍成视频，山外的朋友都说想来村里看看。”", "account": "内容账号 @桂芳的茶园" },
+    { "name": "王德胜", "role": "养蜂 27 年 · 深山土蜂蜜", "quote": "“蜂箱架在崖壁上，蜜熟了就割。以前愁卖，现在视频一发，老顾客都等着预订。”", "account": "内容账号 @崖壁上的老王" },
+    { "name": "陈晓梅", "role": "返乡青年 · 时令果蔬", "quote": "“毕业后我回到村里，用镜头记录春耕秋收——家乡的好东西，值得被更多人看见。”", "account": "内容账号 @晓梅返乡记" }
+  ],
+  "newsSection": {
+    "kicker": "动态资讯",
+    "title": "村里最近发生的事"
+  },
+  "news": [
+    { "date": "2026-10-12", "title": "兴隆沟村高山云雾茶入选县级「乡村好品」名录", "summary": "凭借原生态种植与稳定的品质，兴隆沟村高山云雾茶在县域乡村品牌评选中正式入选，将成为对外推介的重点产品。" },
+    { "date": "2026-09-28", "title": "首场「农户直播日」开播，单日助农订单突破 500 单", "summary": "三位农户轮番上镜，从茶园、蜂场到梯田，直播间里的消费者第一次「看见」了山货的来处。" },
+    { "date": "2026-09-15", "title": "返乡青年内容训练营结营，12 位农户开通内容账号", "summary": "为期两周的训练营里，农户们学会了拍摄、剪辑与发布，第一批乡村内容已陆续上线。" }
+  ],
+  "contact": {
+    "sectionKicker": "联系我们",
+    "sectionTitle": "想尝一口山里的味道？",
+    "sectionSub": "订购咨询、合作洽谈、媒体采访，都欢迎直接联系我们。",
+    "phone": "138-0000-0000",
+    "wechat": "xinglonggou2026",
+    "addressLine1": "XX 省 XX 市 XX 县",
+    "addressLine2": "兴隆沟村 · 乡村振兴服务中心",
+    "hoursLine1": "周一至周六",
+    "hoursLine2": "9:00 – 18:00",
+    "joinTitle": "想让你的山货也上线？",
+    "joinDesc": "如果你也是兴隆沟村及周边村落的农户，欢迎加入「农户内容 D2C 计划」，我们提供拍摄、上架与物流对接支持。",
+    "joinButton": "联系工作人员"
+  }
+}

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<!--
+  页面模板（结构与外观）。本文件不直接发布：
+  由 scripts/build.js 将 content/site.json 的内容填入占位符后，生成 dist/index.html。
+  改内容 → content/site.json；改结构/样式 → 本文件与 src/css/style.css。
+-->
+<html lang="zh-CN" class="no-js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{site.title}}</title>
+  <meta name="description" content="{{site.description}}">
+  <meta name="keywords" content="{{site.keywords}}">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="{{site.url}}">
+  <!-- Open Graph / 社交分享 -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{site.name}}">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:title" content="{{site.title}}">
+  <meta property="og:description" content="{{site.description}}">
+  <meta property="og:url" content="{{site.url}}">
+  <meta property="og:image" content="{{site.ogImageUrl}}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{site.title}}">
+  <meta name="twitter:description" content="{{site.description}}">
+  <meta name="twitter:image" content="{{site.ogImageUrl}}">
+  <!-- 结构化数据（搜索引擎富摘要） -->
+  <script type="application/ld+json">{{{site.jsonLd}}}</script>
+  <meta name="theme-color" content="#173f2e">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+  <script>document.documentElement.classList.replace('no-js', 'js');</script>
+</head>
+<body>
+
+  <!-- ======== 顶部导航 ======== -->
+  <header class="site-header" id="siteHeader">
+    <div class="container nav-wrap">
+      <a class="logo" href="#home" aria-label="{{site.name}}首页">
+        <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 21c0-6.5 2.2-11.4 8-13.5-1.2 8.4-4.4 12.4-8 13.5z" fill="currentColor"/>
+          <path d="M12 21c0-4.2 1-8 5-11" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".55"/>
+        </svg>
+        <span class="logo-text">{{site.name}}<em>{{site.tagline}}</em></span>
+      </a>
+      <nav class="nav" id="primaryNav" aria-label="主导航">
+        <ul>
+          {{#each site.nav}}
+          <li><a href="{{href}}">{{label}}</a></li>
+          {{/each}}
+        </ul>
+        <div class="nav-dash-mobile">
+          <a href="{{site.dashboardUrl}}"><span>{{site.dashboardLabel}}</span><span aria-hidden="true">→</span></a>
+        </div>
+      </nav>
+      <a class="nav-dash" href="{{site.dashboardUrl}}">{{site.dashboardLabel}}</a>
+      <button class="nav-toggle" id="navToggle" aria-label="打开菜单" aria-expanded="false" aria-controls="primaryNav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ======== 首屏 ======== -->
+    <section class="hero" id="home">
+      <div class="hero-sun" aria-hidden="true"></div>
+      <div class="container hero-inner">
+        <p class="hero-badge reveal">{{hero.badge}}</p>
+        <h1 class="reveal">{{hero.title1}}<br>{{hero.title2}}</h1>
+        <p class="hero-sub reveal">{{hero.subtitle}}</p>
+        <div class="hero-cta reveal">
+          <a class="btn btn-primary" href="{{hero.primaryCtaHref}}">{{hero.primaryCtaText}}</a>
+          <a class="btn btn-ghost" href="{{hero.secondaryCtaHref}}">{{hero.secondaryCtaText}}</a>
+        </div>
+      </div>
+      <svg class="hero-hills" viewBox="0 0 1440 300" preserveAspectRatio="none" aria-hidden="true">
+        <path fill="rgba(255,255,255,.05)" d="M0,190 C240,110 480,240 720,170 C960,100 1200,210 1440,150 L1440,300 L0,300 Z"/>
+        <path fill="rgba(255,255,255,.09)" d="M0,240 C300,170 560,270 820,220 C1080,170 1280,250 1440,210 L1440,300 L0,300 Z"/>
+        <path fill="rgba(255,255,255,.16)" d="M0,275 C360,235 720,285 1080,255 C1260,240 1380,260 1440,255 L1440,300 L0,300 Z"/>
+      </svg>
+      <a class="hero-scroll" href="#stats" aria-label="向下浏览"><span></span></a>
+    </section>
+
+    <!-- ======== 数据一览 ======== -->
+    <section class="stats" id="stats">
+      <div class="container stats-grid">
+        {{#each stats}}
+        <div class="stat-card reveal">
+          <p class="stat-num"><span data-count="{{value}}">{{value}}</span><em>{{unit}}</em></p>
+          <p class="stat-label">{{label}}</p>
+        </div>
+        {{/each}}
+      </div>
+    </section>
+
+    <!-- ======== 乡村介绍 ======== -->
+    <section class="section about" id="about">
+      <div class="container about-grid">
+        <div class="about-text">
+          <p class="kicker reveal">{{about.kicker}}</p>
+          <h2 class="reveal">{{about.title}}</h2>
+          <p class="reveal">{{about.p1}}</p>
+          <p class="reveal">{{about.p2}}</p>
+          <ul class="about-features">
+            {{#each about.features}}
+            <li class="reveal">
+              <span class="feat-icon">{{{iconSvg}}}</span>
+              <div><h3>{{title}}</h3><p>{{desc}}</p></div>
+            </li>
+            {{/each}}
+          </ul>
+        </div>
+        <div class="about-visual reveal">
+          <svg viewBox="0 0 480 420" role="img" aria-label="{{site.name}}山水田园插画">
+            <defs>
+              <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#eaf4ec"/><stop offset="1" stop-color="#f7f3ea"/>
+              </linearGradient>
+            </defs>
+            <rect width="480" height="420" rx="20" fill="url(#skyGrad)"/>
+            <circle cx="368" cy="96" r="42" fill="#f4c95d" opacity=".85"/>
+            <path d="M0 250 L118 128 L208 218 L268 156 L480 320 L480 420 L0 420 Z" fill="#8fbf9f"/>
+            <path d="M0 300 L96 216 L190 292 L300 210 L480 350 L480 420 L0 420 Z" fill="#5d9d77"/>
+            <path d="M0 352 C90 322 190 366 280 340 C370 314 430 348 480 330 L480 420 L0 420 Z" fill="#2f6b4f"/>
+            <g stroke="#fff" stroke-width="3" opacity=".5" fill="none" stroke-linecap="round">
+              <path d="M318 352 C330 340 350 340 360 352"/>
+              <path d="M336 342 V388"/>
+            </g>
+            <g fill="#1f4d38">
+              <path d="M96 356 l26-40 26 40 z"/>
+              <rect x="112" y="356" width="20" height="26" rx="2"/>
+              <path d="M170 366 l20-30 20 30 z"/>
+              <rect x="182" y="366" width="16" height="20" rx="2"/>
+            </g>
+            <g stroke="#2f6b4f" stroke-width="4" stroke-linecap="round">
+              <path d="M80 398 h60 M180 398 h60 M280 398 h60 M380 398 h60"/>
+            </g>
+          </svg>
+          <p class="about-badge">{{about.badge}}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== 特色产业 ======== -->
+    <section class="section industry" id="industry">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker reveal">{{industrySection.kicker}}</p>
+          <h2 class="reveal">{{industrySection.title}}</h2>
+          <p class="sub reveal">{{industrySection.sub}}</p>
+        </div>
+        <div class="product-grid">
+          {{#each products}}
+          <article class="product-card reveal">
+            <span class="product-icon">{{{iconSvg}}}</span>
+            <div class="product-body">
+              <h3>{{name}}</h3>
+              <p>{{desc}}</p>
+            </div>
+            <div class="product-foot">
+              <span class="tag">{{tag}}</span>
+              <a href="#contact">{{site.orderLinkText}}</a>
+            </div>
+          </article>
+          {{/each}}
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== 农户故事 ======== -->
+    <section class="section stories" id="stories">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker reveal">{{storySection.kicker}}</p>
+          <h2 class="reveal">{{storySection.title}}</h2>
+          <p class="sub reveal">{{storySection.sub}}</p>
+        </div>
+        <div class="story-grid">
+          {{#each stories}}
+          <article class="story-card reveal">
+            <div class="story-head">
+              <span class="avatar" aria-hidden="true">{{avatarChar}}</span>
+              <div>
+                <h3>{{name}}</h3>
+                <p class="story-role">{{role}}</p>
+              </div>
+            </div>
+            <blockquote>{{quote}}</blockquote>
+            <p class="story-account">{{account}}</p>
+          </article>
+          {{/each}}
+        </div>
+        <p class="story-note reveal">{{storySection.note}}</p>
+      </div>
+    </section>
+
+    <!-- ======== 动态资讯 ======== -->
+    <section class="section news" id="news">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker reveal">{{newsSection.kicker}}</p>
+          <h2 class="reveal">{{newsSection.title}}</h2>
+        </div>
+        <ul class="news-list">
+          {{#each news}}
+          <li class="news-item reveal">
+            <time datetime="{{date}}">{{date}}</time>
+            <div>
+              <h3>{{title}}</h3>
+              <p>{{summary}}</p>
+            </div>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+    </section>
+
+    <!-- ======== 联系我们 ======== -->
+    <section class="section contact" id="contact">
+      <div class="container">
+        <div class="section-head">
+          <p class="kicker reveal">{{contact.sectionKicker}}</p>
+          <h2 class="reveal">{{contact.sectionTitle}}</h2>
+          <p class="sub reveal">{{contact.sectionSub}}</p>
+        </div>
+        <div class="contact-grid">
+          <div class="contact-card reveal">
+            <span class="contact-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h3l1.5 4-2 1.5a12.5 12.5 0 0 0 6 6l1.5-2 4 1.5v3A2.5 2.5 0 0 1 18 20 15.5 15.5 0 0 1 4 6a2.5 2.5 0 0 1 2.5-2.5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </span>
+            <h3>订购电话</h3>
+            <p>{{contact.phone}}</p>
+          </div>
+          <div class="contact-card reveal">
+            <span class="contact-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4c-4.7 0-8.5 2.9-8.5 6.5 0 2.1 1.3 4 3.3 5.2l-.8 3 3.2-1.6c.9.2 1.9.4 2.8.4 4.7 0 8.5-2.9 8.5-6.5S16.7 4 12 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="8.6" cy="10.6" r=".9" fill="currentColor"/><circle cx="12" cy="10.6" r=".9" fill="currentColor"/><circle cx="15.4" cy="10.6" r=".9" fill="currentColor"/></svg>
+            </span>
+            <h3>官方微信</h3>
+            <p>{{contact.wechat}}</p>
+            <button class="btn-copy" type="button" data-copy="{{contact.wechat}}">复制微信号</button>
+          </div>
+          <div class="contact-card reveal">
+            <span class="contact-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+            </span>
+            <h3>村委地址</h3>
+            <p>{{contact.addressLine1}}<br>{{contact.addressLine2}}</p>
+          </div>
+          <div class="contact-card reveal">
+            <span class="contact-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5.2l3.4 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <h3>服务时间</h3>
+            <p>{{contact.hoursLine1}}<br>{{contact.hoursLine2}}</p>
+          </div>
+        </div>
+        <div class="join-band reveal">
+          <div>
+            <h3>{{contact.joinTitle}}</h3>
+            <p>{{contact.joinDesc}}</p>
+          </div>
+          <button class="btn btn-primary" type="button" data-copy="{{contact.wechat}}">{{contact.joinButton}}</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ======== 页脚 ======== -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a class="logo" href="#home">
+          <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21c0-6.5 2.2-11.4 8-13.5-1.2 8.4-4.4 12.4-8 13.5z" fill="currentColor"/>
+          </svg>
+          <span class="logo-text">{{site.name}}<em>{{site.tagline}}</em></span>
+        </a>
+        <p>{{site.slogan}}</p>
+      </div>
+      <nav class="footer-nav" aria-label="页脚导航">
+        {{#each site.nav}}
+        <a href="{{href}}">{{label}}</a>
+        {{/each}}
+        <a class="dash-link" href="{{site.dashboardUrl}}">{{site.dashboardLabel}}</a>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span id="year">2026</span> {{site.copyright}}</p>
+      <p>{{site.icpNote}}</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <button class="back-top" id="backTop" type="button" aria-label="返回顶部">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
+  <script src="js/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "xinglonggou-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "兴隆沟村乡村振兴数字工作台（Vue 3 + Vite + CloudBase）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@cloudbase/js-sdk": "^3.10.2",
+    "vue": "^3.5.44",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.10",
+    "vite": "^8.3.4"
+  }
+}

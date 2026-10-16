@@ -1,0 +1,17 @@
+/**
+ * 图标库：内容配置（content/site.json）里的 icon 字段引用这里的名称。
+ * 新增图标：复制一段并起个新名字，然后在 site.json 的 _readme 里登记名称。
+ */
+const ICONS = {
+  sprout: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c-4.5 2.8-7 6.4-7 9.6A4.9 4.9 0 0 0 9.9 17c1 0 1.7-.3 2.1-.8.4.5 1.1.8 2.1.8a4.9 4.9 0 0 0 4.9-4.4c0-3.2-2.5-6.8-7-9.6z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 16.2V21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  camera: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 6l1.6-2h4.8L16 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12.5" r="3.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+  coin: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19h16M6 19V9.5M12 19V5.5M18 19v-6.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.5 9.5L6 5.5l2.5 4M9.5 5.5L12 2l2.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  leaf: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.5 4.5C13 5 8.6 7.6 6.8 11.2c-1.3 2.6-.6 5.6 1.5 7.1 2 1.5 4.9 1.2 6.7-1 2.3-2.8 3.5-7.4 3.5-12.8z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.5 16.5C11 13.5 14 11 17 9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  drop: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3s6.5 7 6.5 11a6.5 6.5 0 0 1-13 0C5.5 10 12 3 12 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 14.5a3 3 0 0 0 3 3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  rice: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 7c0-2 1.2-3.6 3.4-4.4C14.8 4.8 13.6 6.2 12 7zM12 11c0-2 1.2-3.6 3.4-4.4C14.8 8.8 13.6 10.2 12 11zM12 7C12 5 10.8 3.4 8.6 2.6 9.2 4.8 10.4 6.2 12 7zM12 11c0-2-1.2-3.6-3.4-4.4C9.2 8.8 10.4 10.2 12 11z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+  veggie: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 6V4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 6c1.8-1.8 3.4-2.4 5-2.2-.4 1.8-1.6 3-3.6 3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  basket: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="7" width="12" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 5.5h15" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9.5 13.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".55"/></svg>',
+  bottle: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3h4v3.2l2.2 3.3c1.2 1.8.3 4.5-1.8 5.3V21h-4.8v-6.2C7.5 14 6.6 11.3 7.8 9.5L10 6.2V3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 16.5h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".55"/></svg>'
+};
+
+module.exports = { ICONS };

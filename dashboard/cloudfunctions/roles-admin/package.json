@@ -1,0 +1,10 @@
+{
+  "name": "roles-admin",
+  "version": "1.0.0",
+  "description": "用户角色授权管理（管理员权限写入 users 集合，前端不直接写库）",
+  "main": "index.js",
+  "dependencies": {
+    "@cloudbase/manager-node": "^5.9.1",
+    "@cloudbase/node-sdk": "^3.18.3"
+  }
+}
