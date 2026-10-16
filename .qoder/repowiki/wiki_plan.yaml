@@ -1,0 +1,66 @@
+version: 1
+
+repowiki:
+  notes:
+    - text: 项目由两个完全独立的子项目组成：web/（面向公众的 SEO 静态官网，原生 HTML/CSS/JS + 自研微模板构建脚本）与 dashboard/（Vue 3 + Vite + CloudBase 五角色数字工作台）。两者无共享代码与依赖，不要描述它们之间的引用关系。
+      author: JackUboot
+    - text: 业务闭环固定为：农户生产(farmer) → 入库员入库/代理发布(keeper) → 消费者预约使用(consumer) → 审计员核查(auditor)；consumer 是所有登录用户的隐式默认角色，无需授权；admin 独立于四角色闭环，负责用户授权与系统管理；系统支持一人多角色。
+      author: JackUboot
+    - text: 当前唯一部署环境是 CloudBase 环境 bigfish-2026-d4gixfnab6e09d0f2（官网在该环境静态托管的子路径下，工作台在同域名的 /app/ 子路径）；更换环境时必须同步修改 dashboard/src/core/config.js、web/content/site.json 的 url/dashboardUrl、两个 deploy.ps1，记录部署相关内容时保留这一易漏点提示。
+      author: JackUboot
+    - text: 官网 robots.txt 必须部署到域名根目录才生效（官网本体在子路径，爬虫只认根目录的 robots.txt）；web/dist/ 是构建产物，禁止手改。
+      author: JackUboot
+    - text: dashboard 的 vue-router 刻意使用 hash 模式（静态托管无需配置 SPA 404 回退，任意路径刷新直达），不要建议改成 history 模式。
+      author: JackUboot
+    - text: 安全红线：身份只信云函数上下文的 TCB_UUID，客户端传参一律不可信；前端 getGrantedRoles() 任何异常必须兜底返回 []（最小权限，绝不放大权限）；user_roles 表未对前端授权，禁止描述任何前端直连数据库的用法。
+      author: JackUboot
+    - text: 每次同步在受影响页面末尾「同步记录」追加一行：- YYYY-MM-DD 同步至 <short-hash>：<一句话摘要>；wiki 提交前缀为 docs(wiki):；wiki 内容必须来自真实代码与提交记录，禁止臆测，不引用未验证存在的路径。
+      author: JackUboot
+    - text: 禁止在 wiki 中输出真实密钥、令牌、完整手机号等敏感信息；手机号登录只描述格式校验规则（/^1[3-9]\d{9}$/，+86 前缀）。
+      author: JackUboot
+
+  documents:
+    - title: 项目总览（README）
+      goal: 项目定位、两个子项目对照表、wiki 页面索引、业务闭环一图流、维护约定。
+      hints: 对应 docs/wiki/README.md，是所有页面的索引入口；新增顶层模块时新建页面并更新页面索引表；「维护约定」一节是自动化执行的依据，保持现状。
+      parent: ""
+
+    - title: 01 · 官网（web/）
+      goal: web/ 子项目全部：内容模型（content/site.json）、构建与微模板语法、SEO 要点、部署流程。
+      hints: 职责范围为 web/ 目录全部内容；提交只涉及 web/ 时只更新本页；必记要点：site.json 是全站文字唯一入口；icon 字段只能用 scripts/icons.js 中注册的名称（未知回退 leaf）；_ 开头字段为编辑说明、构建时忽略；构建自动生成 ogImageUrl 与 jsonLd。
+      parent: ""
+
+    - title: 02 · 数字工作台（dashboard/）
+      goal: dashboard/ 前端架构：网关层/核心层/五角色应用层三层结构、路由组合与按区懒加载、登录与工作台选择流程、各角色分区页面清单。
+      hints: 职责范围为 dashboard/src/（含 gateway/、core/、apps/<role>/、router.js）；提交只涉及 dashboard/src/ 时只更新本页；路由表要随 src/apps/*/routes.js 实际路由更新；占位页（placeholder）与已实现页面要区分标注状态。
+      parent: ""
+
+    - title: 03 · 角色与权限
+      goal: 五角色模型（roles.js 为唯一数据源）、user_roles 存储模型、云函数 roles-admin 的安全设计与 actions 一览、首位超级管理员 bootstrap 流程。
+      hints: 职责范围为 dashboard/src/core/roles.js、db.js、dashboard/cloudfunctions/roles-admin/、授权相关 UI（src/apps/admin/）；角色标识改动必须前后端两处一致（前端代码 + 数据库 roles 字段）；可授权角色集合为 farmer/keeper/auditor/admin（consumer 除外）。
+      parent: ""
+
+    - title: 04 · 部署与环境
+      goal: CloudBase 环境信息、两个 deploy.ps1 的部署流程、dashboard/scripts/ 工具清单、本地开发方式。
+      hints: 职责范围为 web/deploy.ps1、dashboard/deploy.ps1、dashboard/scripts/、环境信息；环境 ID、域名与各子路径必须以代码当前值为准；更换环境时的四个同步修改点（config.js、site.json、两个 deploy 脚本）要保留提示。
+      parent: ""
+
+    - title: 05 · 架构与流程
+      goal: 登录与授权流程的 PlantUML 时序图、逐段证据索引、流程风险与缺口清单。
+      hints: 职责范围为 docs/architecture/（login-auth-flow.puml、admin-auth-flow.puml、flow-evidence.md、flow-risks-and-gaps.md）；更新时序图描述时必须附 sourceRefs 行号证据；风险与缺口页单独跟踪未闭环项。
+      parent: ""
+
+knowledgecard:
+  notes:
+    - text: 模块边界：web/（SEO 静态官网）与 dashboard/（五角色数字工作台）是两个完全独立的子项目，无共享代码与依赖；知识卡按子项目划分，不要合并描述。
+      author: JackUboot
+    - text: web/ 内部模块：content/（site.json 全站文字唯一入口）、scripts/（自研微模板构建与图标注册）、src/（HTML 模板与 CSS）、deploy.ps1 + preview.ps1。
+      author: JackUboot
+    - text: dashboard/ 分层：gateway/（登录、选择工作台、无权限、账号等公共流程页）、core/（cloudbase.js SDK 封装、config.js 全站唯一配置点、roles.js 角色唯一数据源、db.js、composables）、apps/<role>/（farmer/keeper/consumer/auditor/admin 五区，互不引用、按区懒加载）、cloudfunctions/roles-admin/（唯一云函数）。
+      author: JackUboot
+    - text: 数据存储仅一处：CloudBase 环境自带 PostgreSQL 的 user_roles 表（uid text PK、roles jsonb、name、时间戳），幂等建表；表未对前端授权，读写全部经 roles-admin 云函数。
+      author: JackUboot
+    - text: 角色模型：五角色 farmer/keeper/consumer/auditor/admin；consumer 为隐式默认（所有登录用户自动拥有）；effectiveRoles() = 数据库授权 + 隐式 consumer，admin 恒在末尾；授权写操作仅经管理后台 → roles-admin 云函数。
+      author: JackUboot
+    - text: 鉴权链路：手机号+短信验证码登录（@cloudbase/js-sdk），登录态存 localStorage；身份只信云函数上下文 TCB_UUID；前端异常一律兜底最小权限 []。
+      author: JackUboot
