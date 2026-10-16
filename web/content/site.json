@@ -7,8 +7,29 @@
     "增删内容：products / stories / news 都是数组，复制一段花括号块修改即新增，删除整块即下线，页面自动重新排版。",
     "site.url 是官网规范地址（canonical/sitemap 用），绑定新域名后记得同步改这里；",
     "site.dashboardUrl / site.dashboardLabel 是工作台登录入口（dashboard/ 工程独立部署在 /app/）；",
-    "site.keywords 供搜索引擎关键词；ogImageUrl 与 jsonLd 由构建脚本自动生成，不用填写。"
+    "site.keywords 供搜索引擎关键词；ogImageUrl 与 jsonLd 由构建脚本自动生成，不用填写。",
+    "图片：首屏与介绍区的照片在 src/assets/ 里。换图只需按同名覆盖 hero-1600.jpg / hero-900.jpg（首屏）与 village-1200.jpg / village-700.jpg（介绍区），不用改模板；要改文件名或换成别的路径，就改 hero.photo / about.photo 等字段。",
+    "hero.photoAlt / about.photoAlt 是图片的替代文字（读屏用），换图后记得同步更新；about.photoCaption 是图片下方的说明文字。"
   ],
+  "ui": {
+    "skipLink": "跳至主要内容",
+    "mainNavLabel": "主导航",
+    "menuOpen": "打开菜单",
+    "menuClose": "关闭菜单",
+    "scrollDown": "向下浏览",
+    "footerNavLabel": "页脚导航",
+    "backTop": "返回顶部",
+    "phoneLabel": "订购电话",
+    "wechatLabel": "官方微信",
+    "addressLabel": "村委地址",
+    "hoursLabel": "服务时间",
+    "copyButton": "复制微信号",
+    "copyBusy": "正在复制…",
+    "copySuccess": "已复制：",
+    "copyError": "复制未完成，请手动记录：",
+    "copySuccessLabel": "已复制",
+    "copyErrorLabel": "重试复制"
+  },
   "site": {
     "name": "兴隆沟村",
     "tagline": "乡村振兴",
@@ -17,7 +38,7 @@
     "slogan": "让山里的好东西，走出大山。",
     "copyright": "兴隆沟村村委会 · 乡村振兴官方网站",
     "icpNote": "本站为 MVP 演示版本，内容为示例占位 · 备案信息待补充",
-    "orderLinkText": "联系订购 →",
+    "orderLinkText": "联系订购",
     "url": "https://bigfish-2026-d4gixfnab6e09d0f2-1253692163.tcloudbaseapp.com/9e3840e6-7054-452d-b9f5-5462917056e2/",
     "dashboardUrl": "https://bigfish-2026-d4gixfnab6e09d0f2-1253692163.tcloudbaseapp.com/app/",
     "dashboardLabel": "登录工作台",
@@ -39,7 +60,9 @@
     "primaryCtaText": "探索特色产业",
     "primaryCtaHref": "#industry",
     "secondaryCtaText": "合作洽谈",
-    "secondaryCtaHref": "#contact"
+    "secondaryCtaHref": "#contact",
+    "photo": "assets/hero-1600.jpg",
+    "photoSmall": "assets/hero-900.jpg"
   },
   "stats": [
     { "value": 126, "unit": "户", "label": "在册农户" },
@@ -53,6 +76,10 @@
     "p1": "兴隆沟村地处连绵群山之间，平均海拔 1200 米，森林覆盖率超过 95%。云雾滋养出高山茶园，山泉灌溉着层层梯田，也养出了一代代守着土地的人。",
     "p2": "过去，好东西困在山里；今天，我们想让改变发生——不靠层层中间商，而是让农户出现在镜头前、故事里，用最朴素的方式，把信任和山货一起送到你身边。",
     "badge": "农户直连 · 零中间商",
+    "photo": "assets/village-1200.jpg",
+    "photoSmall": "assets/village-700.jpg",
+    "photoAlt": "清晨的村庄：云雾漫过层层梯田与茶山，山谷里是成片的村舍",
+    "photoCaption": "清晨的梯田与村庄。",
     "features": [
       { "icon": "sprout", "title": "原生态种植", "desc": "坚持不打催熟剂、不滥用农药，遵循自然节律，让作物慢慢长。" },
       { "icon": "camera", "title": "农户自己讲", "desc": "内容直连，出镜的就是种地的人，产地、人名、时间全部可追溯。" },
