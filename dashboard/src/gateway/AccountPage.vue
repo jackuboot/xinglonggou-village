@@ -1,10 +1,6 @@
 <script setup>
-/**
- * 账号页（各工作台「我的」共用）：身份信息、用户 UID、切换身份与退出。
- * 说明：系统管理功能已归入独立的管理后台（/admin），本页不承载任何管理入口；
- * 申请内部身份的方式：把 UID 提供给管理员，由其在管理后台授权。
- */
-import { computed } from 'vue'
+/** 账号页：身份信息、用户 UID、切换身份与退出；不承载管理授权入口。 */
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/core/components/Icon.vue'
 import { useAuth } from '@/core/composables/useAuth'
@@ -20,6 +16,7 @@ const displayPhone = maskPhone(phoneOf(state.user)) || '已登录'
 const uid = computed(() => uidOf(state.user))
 const myRoles = computed(() => state.roles.map(id => ROLES[id]).filter(Boolean))
 const workspaces = computed(() => availableWorkspaces(state.roles))
+const loggingOut = ref(false)
 
 const INFO = [
   { label: '登录方式', value: '手机号 · 短信验证码' },
@@ -42,20 +39,27 @@ function goSelect() {
 }
 
 async function onLogout() {
-  await logout()
-  router.replace('/login')
+  if (loggingOut.value) return
+  loggingOut.value = true
+  try {
+    await logout()
+    await router.replace('/login')
+  } finally {
+    loggingOut.value = false
+  }
 }
 </script>
 
 <template>
   <div class="page account">
+    <h1>我的账号</h1>
     <div class="card me">
-      <span class="avatar"><Icon name="user" :size="26" /></span>
+      <span class="avatar"><Icon name="user" :size="28" /></span>
       <div class="me-info">
         <h2>{{ displayPhone }}</h2>
-        <div class="me-chips">
-          <span v-for="r in myRoles" :key="r.id" class="chip">
-            <Icon :name="r.icon" :size="13" /> {{ r.name }}
+        <div class="me-chips" aria-label="已开通身份">
+          <span v-for="r in myRoles" :key="r.id" class="chip" :data-role="r.id">
+            <Icon :name="r.icon" :size="16" />{{ r.name }}
           </span>
         </div>
       </div>
@@ -66,8 +70,8 @@ async function onLogout() {
         <span class="row-label">用户 UID</span>
         <span class="row-value uid">
           <code>{{ uid || '—' }}</code>
-          <button v-if="uid" class="copy-btn" @click="copyUid" title="复制 UID（授权时提供给管理员）">
-            <Icon name="doc" :size="14" /> 复制
+          <button v-if="uid" type="button" class="copy-btn" @click="copyUid" title="复制 UID（授权时提供给管理员）">
+            <Icon name="doc" :size="16" />复制 UID
           </button>
         </span>
       </div>
@@ -80,90 +84,48 @@ async function onLogout() {
       </div>
     </div>
 
-    <button v-if="workspaces.length > 1" class="btn btn-ghost switch" @click="goSelect">
-      <Icon name="swap" :size="17" /> 切换身份（{{ workspaces.length }} 个工作台）
+    <button v-if="workspaces.length > 1" type="button" class="btn btn-ghost switch" @click="goSelect">
+      <Icon name="swap" :size="20" />切换身份（{{ workspaces.length }} 个工作台）
     </button>
-
     <div class="actions">
       <a class="btn btn-ghost" :href="SITE_URL">返回官网</a>
-      <button class="btn btn-danger" @click="onLogout">
-        <Icon name="logout" :size="17" /> 退出登录
+      <button type="button" class="btn btn-danger" :disabled="loggingOut" :aria-busy="loggingOut" @click="onLogout">
+        <Icon name="logout" :size="20" />{{ loggingOut ? '退出中…' : '退出登录' }}
       </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.account { max-width: 560px; }
-.me {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 26px 24px;
-  background: linear-gradient(135deg, #ffffff 58%, var(--brand-soft));
-}
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, var(--brand), var(--brand-dark));
-  color: #dff0e4;
-  flex: none;
-}
-.me-info h2 { font-size: 18px; font-weight: 700; margin-bottom: 7px; }
-.me-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-
-.list { margin-top: 14px; padding: 6px 20px; }
-.row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px 0;
-  border-bottom: 1px dashed var(--line);
-  font-size: 14px;
-}
+.account { max-width: 40rem; min-width: 0; overflow-wrap: anywhere; }
+h1 { font-size: var(--text-2xl); line-height: 1.4; margin-bottom: var(--space-5); }
+.me { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-6); background: linear-gradient(120deg, var(--color-surface) 55%, var(--role-accent-soft, var(--color-primary-soft))); }
+.avatar { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: var(--radius-pill); background: var(--role-accent-soft, var(--color-primary-soft)); color: var(--role-accent-ink, var(--color-primary)); flex: none; }
+.me-info { min-width: 0; }
+.me-info h2 { font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-2); }
+.me-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.chip { font-size: var(--text-xs); color: var(--role-accent-ink); background: var(--role-accent-soft); max-width: 100%; }
+.chip svg { flex: none; }
+.list { margin-top: var(--space-4); padding: var(--space-2) var(--space-5); }
+.row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) 0; border-bottom: 1px dashed var(--color-border); font-size: var(--text-sm); }
 .row:last-child { border-bottom: none; }
-.row-label { color: var(--muted); flex: none; }
-.row-value { font-weight: 500; text-align: right; }
-.uid { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.uid code {
-  font-size: 12px;
-  background: #f2f5f3;
-  border-radius: 7px;
-  padding: 3px 8px;
-  word-break: break-all;
+.row-label { color: var(--color-text-muted); }
+.row-value { font-weight: 500; text-align: right; min-width: 0; max-width: 100%; }
+.uid { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; flex: 1 1 14rem; }
+.uid code { max-width: 100%; font-size: var(--text-xs); background: var(--color-surface-muted); border-radius: var(--radius-xs); padding: var(--space-1) var(--space-2); overflow-wrap: anywhere; user-select: all; }
+.copy-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: var(--control-height); font-size: var(--text-sm); font-weight: 600; color: var(--color-primary); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-pill); transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard); }
+.copy-btn:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
+.uid-tip { justify-content: flex-start; font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.7; }
+.switch { width: 100%; margin-top: var(--space-5); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); }
+.actions .btn { flex: 1 1 10rem; }
+.btn { min-width: 0; min-height: var(--control-height); white-space: normal; }
+:is(button, a):focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+@media (max-width: 480px) {
+  .me { flex-direction: column; align-items: flex-start; padding: var(--space-5); }
+  .row { align-items: flex-start; flex-direction: column; }
+  .row-value { text-align: left; }
+  .uid { flex-basis: auto; justify-content: flex-start; }
 }
-.copy-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--brand);
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
-}
-.copy-btn:hover { border-color: var(--brand); background: var(--brand-soft); }
-.uid-tip {
-  justify-content: flex-start;
-  font-size: 12.5px;
-  color: #93a49b;
-  padding: 10px 0 12px;
-  line-height: 1.6;
-}
-
-.switch { width: 100%; margin-top: 14px; }
-
-.actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 12px;
-}
+@media (prefers-reduced-motion: reduce) { .copy-btn { transition: none; } }
 </style>

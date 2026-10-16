@@ -4,9 +4,9 @@ import RoleHome from '@/core/components/RoleHome.vue'
 import { ROLES } from '@/core/roles'
 
 const stats = [
-  { icon: 'inbox', label: '待入库', value: '—', hint: '农户提交后在此处理' },
-  { icon: 'box', label: '在库农产', value: '—', hint: '核收入库后统计' },
-  { icon: 'send', label: '代理发布', value: '—', hint: '发布到消费者端' },
+  { icon: 'inbox', label: '待入库', value: '—', hint: '即将上线' },
+  { icon: 'box', label: '在库农产', value: '—', hint: '即将上线' },
+  { icon: 'send', label: '代理发布', value: '—', hint: '即将上线' },
 ]
 
 const links = [

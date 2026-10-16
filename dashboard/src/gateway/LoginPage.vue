@@ -14,6 +14,8 @@ const code = ref('')
 const sending = ref(false)
 const logging = ref(false)
 const error = ref('')
+const phoneError = ref('')
+const codeError = ref('')
 const countdown = ref(0)
 let timer = null
 let verificationInfo = null // getVerification 返回，登录时需原样传回
@@ -68,157 +70,133 @@ onUnmounted(() => clearInterval(timer))
 </script>
 
 <template>
-  <div class="login">
+  <main class="login">
     <div class="login-card">
       <div class="brand-row">
-        <span class="brand-mark"><Icon name="leaf" :size="22" /></span>
-        <div>
+        <span class="brand-mark"><Icon name="leaf" :size="24" /></span>
+        <div class="brand-copy">
           <h1>{{ BRAND.name }}{{ BRAND.product }}</h1>
           <p>{{ BRAND.slogan }}</p>
         </div>
       </div>
-
+      <p class="intro">使用手机号登录，进入你的工作台。</p>
       <div v-if="error" class="alert" role="alert">{{ error }}</div>
 
-      <form @submit.prevent="onLogin">
+      <form novalidate :aria-busy="sending || logging" @submit.prevent="onLogin">
         <div class="field">
           <label class="field-label" for="phone">手机号</label>
-          <div class="input-wrap">
-            <span class="prefix">+86</span>
+          <div class="input-wrap" :class="{ invalid: phoneError }">
+            <span class="prefix" aria-hidden="true">+86</span>
             <input
               id="phone"
               v-model="phone"
+              name="phone"
               class="input"
               type="tel"
               inputmode="numeric"
               maxlength="11"
               placeholder="请输入 11 位手机号"
-              autocomplete="tel"
+              autocomplete="tel-national"
+              required
+              :readonly="sending || logging"
+              :aria-invalid="Boolean(phoneError)"
+              :aria-describedby="phoneError ? 'phone-help phone-error' : 'phone-help'"
+              @blur="phoneError = phoneValid ? '' : '请输入有效的 11 位手机号'"
+              @input="phoneError = ''"
             />
           </div>
+          <p id="phone-help" class="field-help">中国大陆手机号（+86）</p>
+          <p v-if="phoneError" id="phone-error" class="field-error" role="alert">{{ phoneError }}</p>
         </div>
 
         <div class="field">
           <label class="field-label" for="code">短信验证码</label>
-          <div class="input-wrap">
+          <div class="input-wrap code-wrap" :class="{ invalid: codeError }">
             <input
               id="code"
               v-model="code"
+              name="code"
               class="input"
               type="text"
               inputmode="numeric"
               maxlength="6"
               placeholder="请输入验证码"
               autocomplete="one-time-code"
+              required
+              :readonly="logging"
+              :aria-invalid="Boolean(codeError)"
+              :aria-describedby="codeError ? 'code-help code-error' : 'code-help'"
+              @blur="codeError = codeValid ? '' : '请输入短信中的 4 至 6 位数字验证码'"
+              @input="codeError = ''"
             />
             <button
               type="button"
               class="code-btn"
               :disabled="!phoneValid || sending || countdown > 0"
+              :aria-busy="sending"
               @click="onSendCode"
             >
               {{ codeBtnText }}
             </button>
           </div>
+          <p id="code-help" class="field-help">填写短信中的 4 至 6 位数字</p>
+          <p v-if="codeError" id="code-error" class="field-error" role="alert">{{ codeError }}</p>
         </div>
 
         <button
           type="submit"
           class="btn btn-primary btn-block login-btn"
           :disabled="!phoneValid || !codeValid || logging"
+          :aria-busy="logging"
         >
-          <Icon v-if="!logging" name="arrowRight" :size="18" />
+          <Icon v-if="!logging" name="arrowRight" :size="20" />
           {{ logging ? '登录中…' : '登录工作台' }}
         </button>
       </form>
-
+      <p class="request-status" role="status" aria-live="polite">{{ logging ? '正在验证，请稍候…' : sending ? '正在发送验证码…' : countdown > 0 ? '验证码已发送，请查收短信。' : '' }}</p>
       <p class="agreement">未注册的手机号验证通过后将自动创建账号</p>
     </div>
-
-    <a class="back-site" :href="SITE_URL">← 返回 {{ BRAND.name }}官网</a>
-  </div>
+    <a class="back-site" :href="SITE_URL"><Icon name="arrowRight" :size="16" class="back-arrow" />返回 {{ BRAND.name }}官网</a>
+  </main>
 </template>
 
 <style scoped>
-.login {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  padding: 24px 20px;
-  background:
-    radial-gradient(58% 44% at 82% 12%, rgba(217, 164, 65, 0.28), transparent 62%),
-    linear-gradient(165deg, #143626, #173f2e 34%, #2f6b4f 80%, #3d7f5e);
-  position: relative;
-  overflow: hidden;
-}
-/* 远山剪影 */
-.login::after {
-  content: '';
-  position: absolute;
-  left: -4%;
-  right: -4%;
-  bottom: -30px;
-  height: 190px;
-  background:
-    radial-gradient(46% 100% at 22% 100%, rgba(255, 255, 255, 0.10), transparent 70%),
-    radial-gradient(52% 100% at 68% 100%, rgba(255, 255, 255, 0.07), transparent 72%);
-  border-radius: 48% 52% 0 0 / 90% 100% 0 0;
-  pointer-events: none;
-}
-
-.login-card {
-  position: relative;
-  z-index: 2;
-  width: min(420px, 100%);
-  background: #fff;
-  border-radius: 24px;
-  padding: 38px 34px 30px;
-  box-shadow: var(--shadow-lg);
-}
-
-.brand-row { display: flex; align-items: center; gap: 13px; margin-bottom: 26px; }
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  background: linear-gradient(145deg, var(--brand), var(--brand-dark));
-  color: #dff0e4;
-  flex: none;
-}
-.brand-row h1 { font-size: 19px; font-weight: 700; letter-spacing: 0.02em; }
-.brand-row p { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
-
-.code-btn {
-  padding: 0 14px;
-  color: var(--brand);
-  font-weight: 600;
-  font-size: 13.5px;
-  border-left: 1px solid var(--line);
-  white-space: nowrap;
-  transition: color 0.2s ease;
-}
-.code-btn:not(:disabled):hover { color: var(--brand-dark); }
-.code-btn:disabled { color: #9aaba1; cursor: not-allowed; }
-
-.login-btn { margin-top: 6px; height: 48px; }
-.agreement { margin-top: 18px; text-align: center; font-size: 12.5px; color: #93a49b; }
-
-.back-site {
-  position: relative;
-  z-index: 2;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 13.5px;
-  transition: color 0.2s ease;
-}
-.back-site:hover { color: #fff; }
-
+.login { min-width: 0; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-5); padding: var(--space-8) var(--space-4); background: var(--gradient-login); overflow-wrap: anywhere; }
+.login-card { width: min(28rem, 100%); min-width: 0; background: var(--color-surface); border: 1px solid var(--color-overlay-border); border-radius: var(--radius-lg); padding: var(--space-8); box-shadow: var(--shadow-lg); }
+.brand-row { display: flex; align-items: center; gap: var(--space-3); }
+.brand-mark { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--gradient-brand); color: var(--color-on-primary); flex: none; }
+.brand-copy { min-width: 0; }
+.brand-row h1 { font-size: var(--text-xl); font-weight: 700; line-height: 1.4; }
+.brand-row p { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-1); }
+.intro { font-size: var(--text-sm); color: var(--color-text-muted); margin: var(--space-5) 0 var(--space-6); }
+.field-label { color: var(--color-text); font-size: var(--text-sm); }
+.input-wrap { min-width: 0; background: var(--color-surface-muted); border-color: var(--color-border-strong); }
+.input-wrap:focus-within { background: var(--color-surface); border-color: var(--color-focus); }
+.input-wrap.invalid { border-color: var(--color-danger); }
+.input { width: 100%; min-width: 0; min-height: var(--control-height); font-size: var(--text-base); color: var(--color-text); padding: var(--space-3); border-radius: var(--radius-sm); }
+.input::placeholder { color: var(--color-placeholder); }
+.prefix { font-size: var(--text-base); }
+.code-btn { min-height: var(--control-height); padding: var(--space-3); color: var(--color-primary); font-weight: 600; font-size: var(--text-sm); border-left: 1px solid var(--color-border); white-space: normal; flex: 0 0 auto; transition: color var(--duration-fast) var(--ease-standard); }
+.code-btn:not(:disabled):hover { color: var(--color-primary-hover); background: var(--color-primary-soft); }
+.code-btn:disabled { color: var(--color-text-muted); cursor: not-allowed; }
+.field-help, .field-error { margin-top: var(--space-2); font-size: var(--text-xs); }
+.field-help { color: var(--color-text-muted); }
+.field-error { color: var(--color-danger); }
+.login-btn { margin-top: var(--space-2); min-height: var(--control-height); white-space: normal; }
+.request-status { font-size: var(--text-sm); color: var(--color-primary); }
+.request-status:not(:empty) { margin-top: var(--space-3); }
+.agreement { margin-top: var(--space-4); text-align: center; font-size: var(--text-xs); color: var(--color-text-muted); }
+.back-site { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--control-height); padding: var(--space-2); color: var(--color-on-dark-muted); font-size: var(--text-sm); text-align: center; }
+.back-site:hover { color: var(--color-on-dark); text-decoration: underline; }
+.back-arrow { transform: rotate(180deg); flex: none; }
+:is(input, button, a):focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.back-site:focus-visible { outline-color: var(--color-on-dark); }
 @media (max-width: 480px) {
-  .login-card { padding: 30px 22px 24px; border-radius: 20px; }
+  .login-card { padding: var(--space-6) min(var(--space-5), 5vw); }
+  .brand-row { align-items: flex-start; }
+  .input-wrap .prefix { display: none; }
+  .code-wrap { flex-direction: column; }
+  .code-btn { border-left: 0; border-top: 1px solid var(--color-border); }
 }
+@media (prefers-reduced-motion: reduce) { .code-btn { transition: none; } }
 </style>
