@@ -1,0 +1,77 @@
+' 登录与授权端到端时序（主链路 + 关键分支）
+' 证据版：2026-10-16，基于 commit 6819374；每步对应代码见 flow-evidence.md
+' 说明：官网（web/）不参与本链路，仅通过 site.dashboardUrl 链接跳转到 /app/
+@startuml login-auth-flow
+autonumber
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+actor "用户\n（任意手机号）" as U
+participant "LoginPage\n网关 UI" as LP
+participant "useAuth\n登录态/角色" as AUTH
+participant "CloudBase 身份验证\n(短信/用户目录)" <<external>> as CBS
+participant "roles-admin 云函数" as FN
+database "user_roles\n(PostgreSQL)" as PG
+participant "router.beforeEach\n守卫" as GR
+participant "SelectRolePage /\n角色工作台分区" as SEL
+
+== 0 · 启动恢复（刷新页面 / 直接打开） ==
+GR -> AUTH : 守卫先等 state.ready（轮询，≤3 秒）
+AUTH -> CBS : hasLoginState()（同步读取）
+alt 有本地登录态（localStorage 恢复）
+  AUTH -> CBS : getCurrentUser()（回调链之外调用）
+  CBS --> AUTH : 用户信息（uid / 手机号）
+  AUTH -> FN : callFunction { action:'me' }
+  FN -> PG : SELECT 全量（readAll；表不存在按空处理）
+  PG --> FN : 行数据
+  FN --> AUTH : { ok, data:{ uid, roles, name } }
+  AUTH -> AUTH : effectiveRoles(granted)\n= 授权角色 + 隐式 consumer
+else 无登录态
+  AUTH --> GR : ready=true，loggedIn=false
+  GR -> U : 重定向 /login（未登录一律登录页）
+end
+
+== 1 · 发送验证码 ==
+U -> LP : 输入手机号（+86 前缀校验），点击「获取验证码」
+LP -> AUTH : sendCode('+86' + phone)
+AUTH -> CBS : getVerification(phone_number)
+CBS --> AUTH : verificationInfo（登录时需原样传回）
+LP -> LP : 60 秒倒计时防重发
+note over LP : 发送失败经 friendlyError 翻译为可操作提示\n（短信未开通 / 当日超限 / 域名未加白等）
+
+== 2 · 验证码登录 ==
+U -> LP : 输入 4-6 位验证码，提交表单
+LP -> AUTH : login(phone, code, verificationInfo)
+AUTH -> CBS : signInWithSms(...)（未注册手机号自动建号）
+CBS --> AUTH : 登录成功（SDK 自动持久化会话）
+AUTH -> CBS : getCurrentUser()（refreshUser，仍在回调链之外）
+CBS --> AUTH : 用户信息
+AUTH -> FN : callFunction { action:'me' }
+FN -> PG : SELECT uid, roles, name ...（readAll LIMIT 200）
+PG --> FN : 行数据
+FN -> FN : 只取 uid === TCB_UUID 的本人记录
+FN --> AUTH : 本人授权 roles（无记录 → []）
+note over AUTH : getGrantedRoles() 任何异常一律返回 []\n（兜底最低权限，绝不放大）
+AUTH -> AUTH : effectiveRoles(...) 计算有效角色
+LP -> GR : router.replace(defaultHome(roles)) → /select
+
+== 3 · 守卫校验与进入工作台 ==
+GR -> GR : 等待 rolesLoaded（≤3 秒；超时带现有 roles 继续）
+alt 校验通过（meta.role 在有效角色中）
+  GR -> SEL : 渲染选择工作台页
+  SEL -> U : 展示 availableWorkspaces 卡片（支持一人多角色）
+  U -> SEL : 点击某个身份
+  SEL -> GR : 跳转 w.home（如 /farmer）
+  GR -> SEL : 守卫再校验 → 动态 import() 懒加载该分区代码
+  SEL -> U : 进入角色工作台（多数业务子页为占位页）
+else 角色不满足（meta.role / adminOnly）
+  GR -> U : 重定向 /no-access
+end
+
+== 4 · 退出登录（补充） ==
+U -> SEL : 点击「退出登录」
+SEL -> AUTH : logout()
+AUTH -> CBS : signOut()
+AUTH -> GR : state 重置 → /login
+
+@enduml

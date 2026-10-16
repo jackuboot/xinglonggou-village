@@ -1,0 +1,53 @@
+' 管理端授权读写 + 部署端一次性引导（bootstrap）时序
+' 证据版：2026-10-16，基于 commit 6819374；每步对应代码见 flow-evidence.md
+@startuml admin-auth-flow
+autonumber
+skinparam sequenceMessageAlign center
+
+actor "管理员用户" as ADM
+participant "AdminUsersPage\n(/admin/users)" as AP
+participant "apps/admin/api.js" as API
+participant "roles-admin 云函数" as FN
+participant "CloudBase 身份验证\n(用户目录)" <<external>> as CBS
+database "user_roles\n(PostgreSQL)" as PG
+actor "部署运维者" as OPS
+participant "set-super-admin.mjs\n(部署端脚本)" as SC
+participant "tcb CLI" as TCB
+
+== 进入管理后台（前端侧鉴权） ==
+ADM -> AP : 访问 /admin/users
+note over AP : 此前角色已由登录链路经 roles-admin me 加载\n（见 login-auth-flow.puml）
+AP -> AP : 守卫校验 meta.adminOnly：roles 含 admin 才放行\n（懒加载 admin 分区代码，普通角色不下载）
+
+== 读取（status / list） ==
+AP -> API : fetchAdminStatus() / fetchUserList()
+API -> FN : callFunction { action:'status' | 'list' }
+FN -> FN : 身份只取上下文 TCB_UUID（客户端传参不可信）
+FN -> PG : SELECT 全量（readAll；表不存在按空处理）
+PG --> FN : 行数据
+FN -> FN : isAdminDoc(调用者记录) 校验\n（非 admin → 403）
+FN --> API : { ok, data }（用户总数/是否有管理员/授权列表）
+API --> AP : 返回数据；ok:false 时抛业务错误（toast 展示）
+
+== 写入（grant / revoke，唯一授权写通道） ==
+AP -> API : grantUserRoles(uid, roles, name) / revokeUser(uid)
+API -> FN : callFunction { action:'grant' | 'revoke' }
+FN -> FN : admin 双重校验；角色集合过滤为\nGRANTABLE(farmer/keeper/auditor/admin)
+FN -> FN : 防自锁：给自己 grant 必须保留 admin\n防误撤：revoke 禁止对自己
+FN -> PG : ensureTable()（幂等建表）→ INSERT/UPDATE/DELETE\n（所有拼接值经 esc() 转义）
+PG --> FN : 写入结果
+FN --> AP : { ok } → 前端刷新列表
+
+== 部署端一次性引导（bootstrap，仅首次） ==
+OPS -> SC : node scripts/set-super-admin.mjs <手机号>
+SC -> TCB : execFileSync：fn invoke roles-admin\n--params { action:'bootstrap', phone }
+TCB -> FN : 调用（无用户上下文，uid 为空）
+FN -> FN : 准入①：uid 非空一律拒绝（防应用内自封管理员）\n准入②：全表无任何 admin 才放行（一次性）
+FN -> CBS : describeUserList(phone) 查用户 UID
+CBS --> FN : UID（手机号须先登录过一次才存在）
+FN -> PG : INSERT uid, roles=['admin']\n（ON CONFLICT 则更新）
+PG --> FN : 写入结果
+FN --> SC : { ok, data:{ uid } }
+SC --> OPS : 控制台输出结果（失败给出中文指引）
+
+@enduml
