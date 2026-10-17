@@ -53,6 +53,7 @@ npm run check        # 快照/颜色/图标/对比度门禁 + 单元测试 + 两
 | --- | --- | --- |
 | [docs/wiki/](docs/wiki/README.md) | 项目 Wiki：总览、官网、工作台、角色权限、部署、架构流程 | Qoder 定时任务每小时随提交自动更新 |
 | [docs/architecture/](docs/architecture/flow-evidence.md) | 登录/授权流程 PlantUML 时序图、逐段代码证据、风险清单 | 场景分析时更新 |
+| [docs/blueprint/](docs/blueprint/乡村智能系统蓝图-2026.md) | 2026—2028 智能系统蓝图：角色化 Agent 契约、事件架构、场景优先级与三阶段路线图 | 阶段评审时更新 |
 | [GitHub Wiki](https://github.com/jackuboot/xinglonggou-village/wiki) | 面向新成员的上手文档：快速开始、部署指南 | 手动维护（与 docs/wiki 互补，不重复深入内容） |
 
 > 深入架构与规则以 `docs/wiki/` 为准；`docs/wiki/` 由自动化任务维护，人工上手教程留在 GitHub Wiki。
