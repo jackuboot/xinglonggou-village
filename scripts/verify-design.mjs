@@ -67,8 +67,14 @@ try {
     if(m.id&&pending.has(m.id)){const p=pending.get(m.id);clearTimeout(p.timer);pending.delete(m.id);m.error?p.reject(new Error(JSON.stringify(m.error))):p.resolve(m.result);}
     if(m.method==='Fetch.requestPaused'){
       const url=m.params.request.url;
-      if(/^(https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/|data:|blob:)/.test(url))await send('Fetch.continueRequest',{requestId:m.params.requestId});
-      else {report.externalRequests.push(url);await send('Fetch.failRequest',{requestId:m.params.requestId,errorReason:'BlockedByClient'});}
+      const isLocal=/^(https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/|data:|blob:)/.test(url);
+      if(!isLocal)report.externalRequests.push(url);
+      // 页面跳转或资源被替换时请求可能已被取消，此时 InterceptionId 失效，忽略即可。
+      try {
+        await (isLocal
+          ? send('Fetch.continueRequest',{requestId:m.params.requestId})
+          : send('Fetch.failRequest',{requestId:m.params.requestId,errorReason:'BlockedByClient'}));
+      } catch(e) { /* 已失效的拦截项，无需处理 */ }
     }
     if(m.method==='Runtime.exceptionThrown')report.failures.push('浏览器异常：'+(m.params.exceptionDetails.exception?.description||m.params.exceptionDetails.text));
   };
@@ -76,12 +82,15 @@ try {
   await send('Page.enable');await send('Runtime.enable');await send('Fetch.enable',{patterns:[{urlPattern:'*'}]});
   await send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   const viewport=async(w,h)=>send('Emulation.setDeviceMetricsOverride',{width:w,height:h,deviceScaleFactor:1,mobile:false});
-  async function navigate(url, selector='main') {
+  async function navigate(url, selector='main', role) {
     await send('Page.navigate',{url});
     await until(()=>evaluate(`location.href === ${JSON.stringify(url)} && document.readyState !== 'loading' && !!document.querySelector(${JSON.stringify(selector)})`).catch(()=>false),url);
+    // 切角色时按需加载的外壳才会挂载；只等 main 会匹配到上一个角色的外壳，必须等 data-role。
+    if(role)await until(()=>evaluate(`!!document.querySelector('.workspace[data-role="${role}"]')`),role+' 工作台就绪');
     await evaluate('document.fonts.ready.then(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))))');
     await until(()=>evaluate(`!document.querySelector('[class*="-enter-active"], [class*="-leave-active"]')`),'路由过渡完成');
   }
+  const roleOf = route => (route.match(/^\/(farmer|keeper|consumer|auditor|admin)\b/) || [])[1];
   async function layout(label) {
     const result=await evaluate(`(()=>{const visible=e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'};return {width:innerWidth,scrollWidth:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return r.right>innerWidth+1 && !['svg','path'].includes(e.tagName.toLowerCase())}).slice(0,8).map(e=>e.tagName+'.'+e.className),smallButtons:[...document.querySelectorAll('button')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return r.width<43.5||r.height<43.5}).map(e=>e.textContent.trim()||e.getAttribute('aria-label')),text:document.body.innerText.slice(0,80)}})()`);
     assert(result.scrollWidth<=result.width+1,`${label} 无页面横向溢出`);
@@ -121,7 +130,7 @@ try {
     await viewport(w,h);
     for(const route of routes){
       const url=`http://127.0.0.1:5190/${route==='/login'?'?loggedOut=1':''}#${route}`;
-      await navigate(url,route==='/login'?'#phone':route==='/select'?'.role-card':'.workspace main');
+      await navigate(url,route==='/login'?'#phone':route==='/select'?'.role-entry':'.workspace main',roleOf(route));
       if(route==='/admin/users')await until(()=>evaluate(`document.body.innerText.includes('design-fixture-user-with')`),'用户列表夹具');
       await layout(`工作台夹具 ${route} ${w}×${h}`);
       if((w===375&&['/login','/admin/users','/select'].includes(route))||(w===1440&&route==='/farmer'))await screenshot(`fixture-${route.replaceAll('/','-').slice(1)}-${w}.png`);
@@ -131,15 +140,72 @@ try {
   for(const route of ['/farmer/services','/keeper/intake','/keeper/listing','/keeper/account','/consumer/orders','/consumer/track','/consumer/account','/auditor/intake-audit','/auditor/logs','/auditor/account']){
     await navigate(`http://127.0.0.1:5190/#${route}`,'.workspace main');await layout(`剩余路由夹具 ${route} 375px`);
   }
+  // 角色首页：闭环高亮落在当前角色、功能行保持 44px 且不横向溢出
+  const roleNames = { farmer: '农户', keeper: '入库员', consumer: '消费者', auditor: '审计员' };
+  for (const [role, name] of Object.entries(roleNames)) {
+    for (const width of [1440, 375]) {
+      await viewport(width, width < 600 ? 812 : 960);
+      await navigate(`http://127.0.0.1:5190/#/${role}`, '.workspace main', role);
+      const info = await evaluate(`(()=>{const on=[...document.querySelectorAll('.chain-item.on')];
+        return {onCount:on.length,onText:on.map(e=>e.innerText).join(' '),
+          rows:[...document.querySelectorAll('.row-link')].filter(e=>e.getBoundingClientRect().height>0).map(e=>Math.round(e.getBoundingClientRect().height)),
+          tags:[...document.querySelectorAll('.row-tag')].length,
+          docW:document.documentElement.scrollWidth,win:innerWidth}})()`);
+      assert(info.onCount === 1 && info.onText.includes(name), `${name}工作台 闭环高亮落在本角色`);
+      assert(info.rows.length > 0 && info.rows.every(h => h >= 43.5), `${name}工作台 功能行至少44px`);
+      assert(info.tags === info.rows.length, `${name}工作台 每个入口都标注了上线状态`);
+      assert(info.docW <= info.win + 1, `${name}工作台 ${width}px 无页内横向溢出`);
+    }
+  }
+  // 账号页、占位页与无权限页：结构存在、按钮达标、无页内横向溢出
+  await viewport(1440, 960);
+  await navigate('http://127.0.0.1:5190/#/farmer/account', '.uid-row', 'farmer');
+  assert(await evaluate(`!!(document.querySelector('.uid-row code')||{}).textContent`), '账号页显示用户 UID');
+  assert(await evaluate(`!!document.querySelector('.id-chips') && document.querySelectorAll('.id-chips li').length > 0`), '账号页显示已开通身份');
+  for (const [route, sel] of [['/farmer/account', '.uid-row'], ['/farmer/products', '.empty'], ['/no-access', '.wrap']]) {
+    for (const width of [1440, 375]) {
+      await viewport(width, width < 600 ? 812 : 960);
+      await navigate(`http://127.0.0.1:5190/#${route}`, sel, roleOf(route));
+      await layout(`${route} ${width}px`);
+    }
+  }
+  // 顶栏不重复工作台名：宽屏显示当前分区，窄屏（侧栏隐藏）回退显示工作台名
+  for (const [width, expectDesk, expectPhone] of [[1440, '生产', ''], [375, '', '农户工作台']]) {
+    await viewport(width, width < 600 ? 812 : 960);
+    await navigate('http://127.0.0.1:5190/#/farmer', '.workspace main', 'farmer');
+    const top = await evaluate(`(()=>{const vis=e=>!!e&&getComputedStyle(e).display!=='none';
+      const d=document.querySelector('.tb-desk'), p=document.querySelector('.tb-phone');
+      return {desk:vis(d)?d.textContent.trim():'', phone:vis(p)?p.textContent.trim():'',
+        mark:vis(document.querySelector('.topbar-brand .brand-mark')),
+        sideTitle:(document.querySelector('.sidebar .brand-text strong')||{}).textContent||''}})()`);
+    assert(top.desk === expectDesk && top.phone === expectPhone, `${width}px 顶栏标题按断点切换（桌面分区 / 窄屏工作台名）`);
+    assert(!(top.desk && top.phone), `${width}px 顶栏不会同时出现工作台名与分区名`);
+    if (width >= 900) assert(!top.mark && top.sideTitle === '农户工作台', '宽屏工作台名只在侧栏出现一次');
+    else assert(top.mark, '窄屏侧栏隐藏时顶栏保留角色标识');
+  }
+  // 选中态不使用内嵌条纹：内嵌 box-shadow 会跟着圆角弯折，看起来像渲染错位
+  await viewport(375, 812);
+  for (const role of ['farmer', 'admin']) {
+    await navigate(`http://127.0.0.1:5190/#/${role}`, '.workspace main', role);
+    assert(await evaluate(`(()=>{const el=document.querySelector('.tab-item.active');return !!el && getComputedStyle(el).boxShadow==='none'})()`), `${role} 底部导航选中态不使用内嵌条纹`);
+  }
+  await viewport(1440, 960);
+  await navigate('http://127.0.0.1:5190/#/farmer', '.workspace main', 'farmer');
+  assert(await evaluate(`getComputedStyle(document.querySelector('.side-item.active')).boxShadow==='none'`), '侧栏选中态不使用内嵌条纹');
+  // 侧栏副标题不把中文词从中间劈开，也不溢出侧栏
+  assert(await evaluate(`(()=>{const el=[...document.querySelectorAll('.brand-text small')].find(e=>e.textContent.includes('生产与农事服务'));
+    if(!el)return false;
+    return getComputedStyle(el).wordBreak==='keep-all' && el.scrollWidth<=el.clientWidth+1})()`), '侧栏中文副标题不劈开词且不溢出');
   for(const mode of ['empty','error']){
     await navigate(`http://127.0.0.1:5190/?${mode}=1#/admin/users`,'.workspace main');
     await until(()=>evaluate(`document.body.innerText.includes(${JSON.stringify(mode==='error'?'设计夹具：加载失败':'暂无')})`),mode+'状态');
     await layout(`授权列表${mode}状态375px`);
   }
   for(const role of ['farmer','keeper','consumer','auditor','admin']) {
-    await navigate(`http://127.0.0.1:5190/#/${role}`,'.workspace main');
+    await navigate(`http://127.0.0.1:5190/#/${role}`,'.workspace main',role);
     assert(await evaluate(`(()=>{const hash=location.hash;document.querySelector('.skip-link').click();return location.hash===hash&&document.activeElement===document.querySelector('main')})()`),`${role} 跳至正文聚焦且不破坏hash路由`);
   }
+  await until(()=>evaluate(`!!document.querySelector('.tabbar a[href$="/admin/users"]')`),'管理后台底部导航');
   await evaluate(`document.querySelector('.tabbar a[href$="/admin/users"]').click()`);
   await until(()=>evaluate(`location.hash==='#/admin/users' && !!document.querySelector('#grant-uid') && document.activeElement===document.querySelector('main')`),'子路由正文焦点');
   assert(true,'子路由导航完成后焦点进入正文');
@@ -162,7 +228,7 @@ try {
   assert(await evaluate(`!![...document.querySelectorAll('.topbar button,.topbar a')].find(e=>e.innerText.includes('切换')||e.getAttribute('aria-label')?.includes('切换'))`),'手机管理员可达身份切换');
   await evaluate(`document.documentElement.style.fontSize='200%'`);await layout('手机管理员200%文字');
   await evaluate(`[...document.querySelectorAll('.mobile-account button')].find(e=>e.innerText.includes('切换')).click()`);
-  await until(()=>evaluate(`location.hash==='#/select'&&!!document.querySelector('.role-card')`),'手机切换工作台');
+  await until(()=>evaluate(`location.hash==='#/select'&&!!document.querySelector('.role-entry')`),'手机切换工作台');
   assert(true,'手机管理员身份切换按钮可实际进入选择页');
   for(const [w,h,section] of [[375,812,'industry'],[1440,960,'contact']]) {
     await viewport(w,h);await navigate('http://127.0.0.1:8180/','main');

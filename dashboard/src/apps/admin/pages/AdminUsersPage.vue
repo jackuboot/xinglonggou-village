@@ -3,6 +3,7 @@
  * 用户授权管理页（仅 admin 可进入，路由守卫已拦截）。
  * 给村民账号开通 / 修改 / 撤销工作台身份（农户 / 入库员 / 审计员 / 管理员）。
  * 写操作全部走云函数 roles-admin（管理员权限），前端不具备直写数据库能力。
+ * 本轮只调整版式：表单与名单改为细线分区，不做层层卡片；授权逻辑不变。
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 import Icon from '@/core/components/Icon.vue'
@@ -119,27 +120,28 @@ onMounted(loadList)
 </script>
 
 <template>
-  <div class="page-admin">
-    <div class="wrap">
-      <h1>用户授权</h1>
-      <p class="lead">
-        给村民账号开通工作台身份：把你的账号作为管理员，通过下方表单为对方授权。
-        对方在「我的」页复制 UID 发给你即可；授权保存后对方刷新页面生效。
-      </p>
+  <div class="page admin-users">
+    <p class="page-kicker">管理后台 · 用户授权</p>
+    <h1 class="page-title">用户授权</h1>
+    <p class="page-lead">
+      给村民账号开通工作台身份：把你的账号作为管理员，通过下方表单为对方授权。
+      对方在「我的」页复制 UID 发给你即可；授权保存后对方刷新页面生效。
+    </p>
 
-      <section class="card form" aria-labelledby="grant-heading">
-        <h2 id="grant-heading">新增 / 更新授权</h2>
+    <section class="page-section" aria-labelledby="grant-heading">
+      <h2 id="grant-heading" class="section-label">新增 / 更新授权</h2>
+      <div class="grant">
         <div class="field">
-          <label class="label" for="grant-uid">用户 UID（必填）</label>
+          <label class="field-label" for="grant-uid">用户 UID（必填）</label>
           <input id="grant-uid" v-model="form.uid" type="text" placeholder="粘贴对方的用户 UID" spellcheck="false" autocomplete="off" aria-required="true" aria-describedby="grant-uid-help" :disabled="submitting" />
           <p id="grant-uid-help" class="field-help">填写用户 UID，不是手机号。</p>
         </div>
         <div class="field">
-          <label class="label" for="grant-name">备注姓名（选填）</label>
+          <label class="field-label" for="grant-name">备注姓名（选填）</label>
           <input id="grant-name" v-model="form.name" type="text" placeholder="例如：张三" maxlength="40" autocomplete="off" :disabled="submitting" />
         </div>
         <fieldset class="field role-field" :disabled="submitting">
-          <legend class="label">开通身份（可多选，至少一项）</legend>
+          <legend class="field-label">开通身份（可多选，至少一项）</legend>
           <div class="role-opts">
             <button
               v-for="r in GRANTABLE"
@@ -164,100 +166,92 @@ onMounted(loadList)
           <button type="button" class="btn btn-ghost" :disabled="submitting" @click="resetForm">清空</button>
         </div>
         <p class="save-status" role="status" aria-live="polite">{{ submitting ? '正在保存授权，请稍候…' : '' }}</p>
-        <p class="form-tip">提示：消费者身份所有登录用户默认具备，无需授权；可以给自己追加身份（用于体验各工作台），但不能移除自己的管理员身份，也不能撤销自己。</p>
-      </section>
+        <p class="section-note">提示：消费者身份所有登录用户默认具备，无需授权；可以给自己追加身份（用于体验各工作台），但不能移除自己的管理员身份，也不能撤销自己。</p>
+      </div>
+    </section>
 
-      <section class="card list" aria-labelledby="users-heading">
-        <div class="list-head">
-          <h2 id="users-heading">已授权用户 <span v-if="!loading" class="count">{{ users.length }}</span></h2>
-          <button type="button" class="refresh" :disabled="loading" :aria-busy="loading" @click="loadList">{{ loading ? '加载中…' : '刷新' }}</button>
-        </div>
-        <p v-if="loadError" class="state err" role="alert">
-          列表加载失败：{{ loadError }}
-          <button type="button" class="link" @click="loadList">重试</button>
-        </p>
-        <p v-else-if="loading" class="state" role="status" aria-live="polite">正在加载已授权用户…</p>
-        <p v-else-if="!users.length" class="state" role="status">暂无授权记录。（还没有人获得农户 / 入库员 / 审计员身份）</p>
-        <ul v-else class="users">
-          <li v-for="u in users" :key="u.uid" class="user">
-            <div class="u-main">
-              <div class="u-title">
-                <strong>{{ u.name || '未命名' }}</strong>
-                <span v-if="myUid && u.uid === myUid" class="tag me">当前账号</span>
-              </div>
-              <code class="u-uid">{{ u.uid }}</code>
-              <div class="u-roles">
-                <span v-for="r in u.roles" :key="r" class="chip" :data-role="r" :class="{ admin: r === ADMIN_ROLE }">{{ roleName(r) }}</span>
-              </div>
+    <section class="page-section" aria-labelledby="users-heading">
+      <div class="list-head">
+        <h2 id="users-heading" class="section-label">已授权用户 <span v-if="!loading" class="count">{{ users.length }}</span></h2>
+        <button type="button" class="refresh" :disabled="loading" :aria-busy="loading" @click="loadList">{{ loading ? '加载中…' : '刷新' }}</button>
+      </div>
+
+      <p v-if="loadError" class="state err" role="alert">
+        列表加载失败：{{ loadError }}
+        <button type="button" class="link" @click="loadList">重试</button>
+      </p>
+      <p v-else-if="loading" class="state" role="status" aria-live="polite">正在加载已授权用户…</p>
+      <p v-else-if="!users.length" class="state" role="status">暂无授权记录。（还没有人获得农户 / 入库员 / 审计员身份）</p>
+      <ul v-else class="users">
+        <li v-for="u in users" :key="u.uid" class="user">
+          <div class="u-main">
+            <div class="u-title">
+              <strong>{{ u.name || '未命名' }}</strong>
+              <span v-if="myUid && u.uid === myUid" class="tag me">当前账号</span>
             </div>
-            <div class="u-ops">
-              <span v-if="u.updatedAt" class="u-time">{{ fmtTime(u.updatedAt) }}</span>
-              <div class="u-btns">
-                <button type="button" class="mini" :aria-label="`编辑 ${u.name || u.uid} 的授权`" @click="editUser(u)">编辑</button>
-                <button v-if="!myUid || u.uid !== myUid" type="button" class="mini danger" :aria-label="`撤销 ${u.name || u.uid} 的授权`" @click="onRevoke(u)">撤销</button>
-              </div>
+            <code class="u-uid">{{ u.uid }}</code>
+            <div class="u-roles">
+              <span v-for="r in u.roles" :key="r" class="chip" :data-role="r">{{ roleName(r) }}</span>
             </div>
-          </li>
-        </ul>
-      </section>
-    </div>
+          </div>
+          <div class="u-ops">
+            <span v-if="u.updatedAt" class="u-time">{{ fmtTime(u.updatedAt) }}</span>
+            <div class="u-btns">
+              <button type="button" class="mini" :aria-label="`编辑 ${u.name || u.uid} 的授权`" @click="editUser(u)">编辑</button>
+              <button v-if="!myUid || u.uid !== myUid" type="button" class="mini danger" :aria-label="`撤销 ${u.name || u.uid} 的授权`" @click="onRevoke(u)">撤销</button>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.page-admin { min-width: 0; overflow-wrap: anywhere; }
-.wrap { max-width: 52rem; min-width: 0; margin: 0 auto; }
-h1 { font-size: var(--text-2xl); line-height: 1.4; margin-bottom: var(--space-3); }
-.lead { font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.7; margin-bottom: var(--space-5); }
-.card { min-width: 0; padding: var(--space-6); }
-.card + .card { margin-top: var(--space-5); }
-h2 { font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-4); }
-.field { display: block; min-width: 0; margin-bottom: var(--space-4); }
-.label { display: block; font-size: var(--text-sm); color: var(--color-text); font-weight: 600; margin-bottom: var(--space-2); }
-.field-help { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-2); }
+.admin-users { max-width: 52rem; }
+
+.grant { margin-top: var(--space-4); }
 .field input { width: 100%; min-width: 0; min-height: var(--control-height); padding: var(--space-3); font-size: var(--text-base); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); transition: border-color var(--duration-fast) var(--ease-standard); }
 .field input::placeholder { color: var(--color-placeholder); }
-.field input:focus { border-color: var(--color-focus); }
-.role-field { border: 0; padding: 0; }
-.role-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-.role-opt { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-2); align-items: center; min-width: 0; min-height: var(--control-height); text-align: left; padding: var(--space-3); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard); }
+.role-field { border: 0; }
+.role-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-2); }
+.role-opt { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-2); align-items: center; min-width: 0; min-height: var(--control-height); padding: var(--space-3); text-align: left; border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard); }
 .role-opt svg { grid-row: 1 / span 2; color: var(--color-text-muted); }
 .role-opt.on { border-color: var(--role-accent); background: var(--role-accent-soft); }
 .role-opt.on svg { color: var(--role-accent-ink); }
-.role-opt:hover { border-color: var(--role-accent); }
 .ro-name { font-size: var(--text-sm); font-weight: 600; }
 .ro-desc { font-size: var(--text-xs); color: var(--color-text-muted); }
-.form-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-2); }
-.form-actions .btn { flex: 1 1 10rem; min-width: 0; min-height: var(--control-height); white-space: normal; }
-.form-tip { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-3); line-height: 1.7; }
+.form-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.form-actions .btn { flex: 1 1 10rem; min-width: 0; white-space: normal; }
 .save-status { font-size: var(--text-sm); color: var(--color-primary); }
 .save-status:not(:empty) { margin-top: var(--space-3); }
-.list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
-.list-head h2 { margin-bottom: 0; }
-.count { display: inline-block; text-align: center; font-size: var(--text-xs); font-weight: 700; color: var(--role-accent-ink); background: var(--role-accent-soft); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-2); font-variant-numeric: tabular-nums; }
-.refresh, .mini { min-height: var(--control-height); min-width: var(--control-height); font-size: var(--text-sm); font-weight: 600; color: var(--color-primary); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
-.refresh:not(:disabled):hover, .mini:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
-button:disabled, input:disabled { opacity: 0.65; cursor: not-allowed; }
-.state { font-size: var(--text-sm); color: var(--color-text-muted); padding: var(--space-4) 0; }
+
+.list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.count { display: inline-block; padding: var(--space-1) var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: 700; color: var(--role-accent-ink); background: var(--role-accent-soft); font-variant-numeric: tabular-nums; }
+.refresh, .mini { min-height: var(--control-height); min-width: var(--control-height); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-pill); font-size: var(--text-sm); font-weight: 600; color: var(--color-primary); background: var(--color-surface); transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
+.state { font-size: var(--text-sm); color: var(--color-text-muted); padding-block: var(--space-4); }
 .state.err { color: var(--color-danger); }
-.link { min-height: var(--control-height); min-width: var(--control-height); padding: var(--space-2); color: var(--color-primary); text-decoration: underline; font-size: var(--text-sm); }
-.users { display: flex; flex-direction: column; }
-.user { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) 0; border-bottom: 1px solid var(--color-border); }
-.user:last-child { border-bottom: none; padding-bottom: 0; }
-.u-main { min-width: 0; flex: 1 1 16rem; }
+.link { min-height: var(--control-height); padding: var(--space-2); font-size: var(--text-sm); color: var(--color-primary); text-decoration: underline; }
+
+.users { margin-top: var(--space-3); border-top: 1px solid var(--color-border-strong); }
+.user { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-5); border-bottom: 1px solid var(--color-border); }
+.u-main { flex: 1 1 16rem; min-width: 0; }
 .u-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--text-base); }
-.tag.me { font-size: var(--text-xs); color: var(--color-primary); background: var(--color-primary-soft); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-2); }
-.u-uid { display: inline-block; max-width: 100%; font-size: var(--text-xs); color: var(--color-text-muted); background: var(--color-surface-muted); border-radius: var(--radius-xs); padding: var(--space-1) var(--space-2); margin-top: var(--space-2); overflow-wrap: anywhere; }
+.tag.me { padding: var(--space-1) var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: 600; color: var(--color-primary); background: var(--color-primary-soft); }
+.u-uid { display: inline-block; max-width: 100%; margin-top: var(--space-2); padding: var(--space-1) var(--space-2); border-radius: var(--radius-xs); font-size: var(--text-xs); color: var(--color-text-muted); background: var(--color-surface-muted); overflow-wrap: anywhere; }
 .u-roles { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
-.chip { max-width: 100%; font-size: var(--text-xs); font-weight: 600; color: var(--role-accent-ink); background: var(--role-accent-soft); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-2); }
+.chip { max-width: 100%; padding: var(--space-1) var(--space-2); border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: 600; color: var(--role-accent-ink); background: var(--role-accent-soft); }
 .u-ops { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); min-width: 0; max-width: 100%; }
 .u-time { font-size: var(--text-xs); color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 .u-btns { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .mini.danger { color: var(--color-danger); }
-.mini.danger:hover { border-color: var(--color-danger); background: var(--color-danger-soft); }
-:is(input, button):focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+
+@media (hover: hover) {
+  .role-opt:hover { border-color: var(--role-accent); }
+  .refresh:not(:disabled):hover, .mini:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
+  .mini.danger:hover { border-color: var(--color-danger); background: var(--color-danger-soft); }
+}
 @media (max-width: 560px) {
-  .card { padding: var(--space-5) var(--space-4); }
   .role-opts { grid-template-columns: minmax(0, 1fr); }
   .u-main { flex-basis: 100%; }
   .u-ops { align-items: flex-start; }

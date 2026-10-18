@@ -1,68 +1,88 @@
 <script setup>
-/** 角色首页展示骨架；角色信息、入口和业务仍由各工作台提供。 */
+/**
+ * 角色首页骨架：统一「你在闭环里的位置 + 本区功能」两段，入口与文案由各角色传入。
+ * 细线功能行等区块样式在 core/styles/base.css 中共用；不摆无数据的空指标卡，
+ * 未上线的功能以文字标签标注，入口保持可达（点进占位页）。
+ */
+import { computed } from 'vue'
 import Icon from './Icon.vue'
-import StatCard from './StatCard.vue'
+import { CHAIN_STEPS } from '@/core/chain'
 
-defineProps({
+const props = defineProps({
   role: { type: Object, required: true },
-  tagline: { type: String, default: '' },
-  stats: { type: Array, default: () => [] },
+  section: { type: String, default: '' },
+  title: { type: String, required: true },
+  summary: { type: String, default: '' },
+  note: { type: String, default: '本区业务功能正在开发；账号信息与用户 UID 在「我的」里查看与复制。' },
   links: { type: Array, default: () => [] },
 })
+
+/** 该角色在闭环中的位置；管理后台不在闭环内，则不显示上下游。 */
+const chainIndex = computed(() => CHAIN_STEPS.findIndex(step => step.id === props.role.id))
+const prevStep = computed(() => (chainIndex.value > 0 ? CHAIN_STEPS[chainIndex.value - 1] : null))
+const nextStep = computed(() => (chainIndex.value >= 0 && chainIndex.value < CHAIN_STEPS.length - 1 ? CHAIN_STEPS[chainIndex.value + 1] : null))
 </script>
 
 <template>
-  <div class="page" :data-role="role.id">
-    <div class="card hero">
-      <span class="hero-ic"><Icon :name="role.icon" :size="28" /></span>
-      <div class="hero-text">
-        <h1>{{ role.name }}概览</h1>
-        <p>{{ tagline || role.desc }}</p>
-      </div>
-    </div>
+  <div class="page">
+    <p class="page-kicker">{{ role.name }}<template v-if="section"> · {{ section }}</template></p>
+    <h1 class="page-title">{{ title }}</h1>
+    <p v-if="summary" class="page-lead">{{ summary }}</p>
 
-    <div v-if="stats.length" class="stats">
-      <StatCard v-for="s in stats" :key="s.label" v-bind="s" />
-    </div>
+    <section v-if="chainIndex >= 0" class="page-section" :aria-labelledby="`chain-heading-${role.id}`">
+      <h2 :id="`chain-heading-${role.id}`" class="section-label">闭环里的位置</h2>
+      <ol class="chain">
+        <li
+          v-for="step in CHAIN_STEPS"
+          :key="step.id"
+          class="chain-item"
+          :class="{ on: step.id === role.id }"
+          :aria-current="step.id === role.id ? 'step' : undefined"
+        >
+          <span class="chain-no">{{ step.index }}</span>
+          <span class="chain-name">{{ step.name }}</span>
+          <span class="chain-act">{{ step.action }}</span>
+        </li>
+      </ol>
+      <p class="chain-flow">
+        <span>上一环：{{ prevStep ? `${prevStep.name} · ${prevStep.action}` : '你的环节是起点' }}</span>
+        <span>下一环：{{ nextStep ? `${nextStep.name} · ${nextStep.action}` : '你的环节是终点' }}</span>
+      </p>
+    </section>
 
-    <section v-if="links.length" class="quick" aria-label="功能入口">
-      <h2>功能入口</h2>
-      <router-link v-for="l in links" :key="l.to" :to="l.to" class="card quick-item">
-        <span class="quick-ic"><Icon :name="l.icon" :size="20" /></span>
-        <span class="quick-text">
-          <strong>{{ l.title }}</strong>
-          <small>{{ l.desc }}</small>
-          <span class="coming">即将上线</span>
-        </span>
-        <Icon name="arrowRight" :size="20" class="quick-arrow" />
-      </router-link>
+    <section class="page-section" :aria-labelledby="`func-heading-${role.id}`">
+      <h2 :id="`func-heading-${role.id}`" class="section-label">本区功能</h2>
+      <ul class="row-list">
+        <li v-for="item in links" :key="item.to">
+          <router-link class="row-link" :to="item.to">
+            <span class="row-icon"><Icon :name="item.icon" :size="20" /></span>
+            <span class="row-body">
+              <strong>{{ item.title }}</strong>
+              <small>{{ item.desc }}</small>
+            </span>
+            <span class="row-tag">即将上线</span>
+            <span class="row-arrow" aria-hidden="true"><Icon name="arrowRight" :size="20" /></span>
+          </router-link>
+        </li>
+      </ul>
+      <p v-if="note" class="section-note">{{ note }}</p>
     </section>
   </div>
 </template>
 
 <style scoped>
-.page { min-width: 0; overflow-wrap: anywhere; }
-.hero { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-6); background: linear-gradient(120deg, var(--color-surface) 55%, var(--role-accent-soft, var(--color-primary-soft))); }
-.hero-ic { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: var(--radius-lg); background: var(--role-accent-soft, var(--color-primary-soft)); color: var(--role-accent-ink, var(--color-primary)); flex: none; }
-.hero-text { min-width: 0; }
-.hero-text h1 { font-size: var(--text-2xl); line-height: 1.4; font-weight: 700; }
-.hero-text p { color: var(--color-text-muted); font-size: var(--text-sm); margin-top: var(--space-2); line-height: 1.7; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--space-4); margin-top: var(--space-4); }
-.quick { display: grid; gap: var(--space-3); margin-top: var(--space-6); }
-.quick h2 { font-size: var(--text-lg); }
-.quick-item { display: flex; align-items: center; gap: var(--space-3); min-width: 0; min-height: var(--control-height); padding: var(--space-4) var(--space-5); transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard); }
-.quick-item:hover { border-color: var(--role-accent, var(--color-primary)); box-shadow: var(--shadow-md); }
-.quick-item:active { background: var(--color-surface-muted); }
-.quick-item:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-.quick-ic { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--role-accent-soft, var(--color-primary-soft)); color: var(--role-accent-ink, var(--color-primary)); flex: none; }
-.quick-text { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); min-width: 0; flex: 1; }
-.quick-text strong { font-size: var(--text-base); }
-.quick-text small { color: var(--color-text-muted); font-size: var(--text-sm); }
-.coming { font-size: var(--text-xs); color: var(--color-text-muted); }
-.quick-arrow { color: var(--color-text-muted); flex: none; }
-@media (max-width: 480px) {
-  .hero { align-items: flex-start; flex-direction: column; padding: var(--space-5); }
-  .quick-item { padding: var(--space-4); gap: var(--space-2); }
+/* 闭环链路：窄屏两列、宽屏四列；当前环节同时用字重、下划线与底色表示，不靠颜色单独表达 */
+.chain { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); margin-top: var(--space-4); }
+.chain-item { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-2); align-items: baseline; padding: var(--space-3) var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); }
+.chain-no { font-size: var(--text-xs); font-weight: 600; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.chain-name { justify-self: start; min-width: 0; font-size: var(--text-sm); font-weight: 600; color: var(--color-text-muted); }
+.chain-act { grid-column: 2; font-size: var(--text-xs); color: var(--color-text-muted); }
+.chain-item.on { border-color: var(--role-accent); background: var(--role-accent-soft); }
+.chain-item.on .chain-name { color: var(--role-accent-ink); font-weight: 700; }
+.chain-item.on .chain-name::after { content: ""; display: block; height: 2px; margin-top: 2px; background: var(--role-accent); }
+.chain-flow { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-6); margin-top: var(--space-4); font-size: var(--text-xs); color: var(--color-text-muted); }
+
+@media (min-width: 600px) {
+  .chain { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
-@media (prefers-reduced-motion: reduce) { .quick-item { transition: none; } }
 </style>

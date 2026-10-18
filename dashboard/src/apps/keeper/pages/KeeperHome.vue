@@ -1,13 +1,7 @@
 <script setup>
-/** 入库员工作台首页：农产品入库与代理发布（业务闭环的「记录」环节） */
+/** 入库员工作台首页：业务闭环的「记录」环节 */
 import RoleHome from '@/core/components/RoleHome.vue'
 import { ROLES } from '@/core/roles'
-
-const stats = [
-  { icon: 'inbox', label: '待入库', value: '—', hint: '即将上线' },
-  { icon: 'box', label: '在库农产', value: '—', hint: '即将上线' },
-  { icon: 'send', label: '代理发布', value: '—', hint: '即将上线' },
-]
 
 const links = [
   { to: '/keeper/intake', icon: 'inbox', title: '农产品入库', desc: '核收农户提交的农产品并登记入库' },
@@ -18,8 +12,9 @@ const links = [
 <template>
   <RoleHome
     :role="ROLES.keeper"
-    tagline="你在闭环中的角色：核收农户提交、登记入库、代理发布——记录是否真实完整，由审计员定期核查。"
-    :stats="stats"
+    section="入库台"
+    title="核收、入库与代理发布"
+    summary="你在闭环里负责「记录」：核收农户提交的农产并登记入库，再代理发布给消费者；记录是否真实完整，由审计员定期核查。"
     :links="links"
   />
 </template>

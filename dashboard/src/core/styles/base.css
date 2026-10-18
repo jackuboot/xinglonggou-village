@@ -17,6 +17,7 @@ ul, ol { list-style: none; }
 p, h1, h2, h3, small { overflow-wrap: anywhere; }
 :focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; border-radius: var(--radius-xs); }
 ::selection { background: var(--accent-soft); color: var(--ink); }
+/* 仅供读屏的可视隐藏文本；目前无调用点，保留为通用无障碍工具类 */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .skip-link { position: fixed; top: var(--space-3); left: var(--space-3); z-index: calc(var(--z-toast) + 1); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); background: var(--card); color: var(--brand); transform: translateY(-200%); }
 .skip-link:focus { transform: none; }
@@ -26,6 +27,8 @@ p, h1, h2, h3, small { overflow-wrap: anywhere; }
 .btn:active:not(:disabled) { transform: scale(0.98); }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-primary { background: var(--button-bg); color: var(--button-fg); }
+/* 禁用的主按钮改为中性底 + 可读文字：降低透明度会让白字在浅底上发白，读不清 */
+.btn-primary:disabled { opacity: 1; background: var(--color-surface-muted); color: var(--color-text-muted); }
 .btn-primary:not(:disabled):hover { background: var(--button-hover-bg); }
 .btn-block { width: 100%; }
 .btn-ghost { border-color: var(--color-border-strong); color: var(--ink); background: var(--card); }
@@ -46,14 +49,37 @@ p, h1, h2, h3, small { overflow-wrap: anywhere; }
 .field-error { color: var(--danger); }
 .alert { background: var(--danger-soft); color: var(--danger); border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); line-height: 1.65; margin-bottom: var(--space-4); overflow-wrap: anywhere; }
 
-.card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius); box-shadow: var(--shadow-sm); min-width: 0; }
-.chip { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-xs); font-weight: 600; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--brand-soft); color: var(--brand-dark); }
-.chip.gold { background: var(--accent-soft); color: var(--color-accent-ink); }
-.chip.gray { background: var(--color-surface-muted); color: var(--muted); }
 .page { width: 100%; min-width: 0; max-width: var(--layout-content); margin: 0 auto; }
 .page-title { font-size: var(--text-2xl); font-weight: 700; letter-spacing: 0.01em; }
-.page-sub { color: var(--muted); font-size: var(--text-sm); margin-top: var(--space-1); }
 
+/* ---------- 角色首页与后台总览共用的区块模式 ----------
+   统一「小标 + 标题 + 引言 + 小节标题 + 细线功能行」，避免各角色各写一份导致漂移。
+   功能行不做卡片：未上线状态用文字标签说明，整行仍是可点链接（点进占位页）。 */
+.page-kicker { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.1em; color: var(--role-accent-ink, var(--color-primary)); }
+.page-lead { max-width: 40rem; margin-top: var(--space-3); font-size: var(--text-sm); line-height: 1.85; color: var(--muted); }
+.page-section { margin-top: var(--space-8); }
+.section-label { font-size: var(--text-sm); font-weight: 600; letter-spacing: 0.06em; color: var(--muted); }
+.section-note { max-width: 40rem; margin-top: var(--space-4); font-size: var(--text-xs); line-height: 1.75; color: var(--muted); }
+
+.row-list { margin-top: var(--space-3); border-top: 1px solid var(--color-border-strong); }
+.row-link { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-4) var(--space-2); border-bottom: 1px solid var(--color-border); transition: background-color var(--duration-fast) var(--ease-standard); }
+.row-icon { grid-area: 1 / 1; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; border-radius: var(--radius-md); background: var(--role-accent-soft, var(--color-primary-soft)); color: var(--role-accent-ink, var(--color-primary)); }
+.row-body { grid-area: 1 / 2; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.row-body strong { font-size: var(--text-base); }
+.row-body small { font-size: var(--text-sm); line-height: 1.6; color: var(--muted); }
+.row-tag { grid-area: 2 / 2; justify-self: start; padding: var(--space-1) var(--space-3); border-radius: var(--radius-xs); font-size: var(--text-xs); font-weight: 600; color: var(--color-accent-ink); background: var(--color-accent-soft); white-space: nowrap; }
+.row-arrow { grid-area: 1 / 3; display: inline-flex; color: var(--muted); }
+.row-link:active { background: var(--color-surface-muted); }
+@media (min-width: 600px) {
+  .row-link { grid-template-columns: 44px minmax(0, 1fr) auto auto; gap: var(--space-4); }
+  .row-tag { grid-area: 1 / 3; justify-self: end; }
+  .row-arrow { grid-area: 1 / 4; }
+}
+@media (hover: hover) {
+  .row-link:hover { background: var(--color-surface-muted); }
+}
+
+/* 路由切换过渡：类名由 Vue <transition name="fade"> 在运行时添加，模板里看不到引用属正常 */
 .fade-enter-active, .fade-leave-active { transition: opacity var(--duration-fast); }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 .toast { position: fixed; left: 50%; bottom: calc(var(--space-6) + env(safe-area-inset-bottom)); transform: translate(-50%, 10px); background: var(--toast-bg); color: var(--toast-fg); padding: var(--space-3) var(--space-5); border-radius: var(--toast-radius); font-size: var(--text-sm); width: max-content; max-width: min(calc(100vw - 32px), 460px); overflow-wrap: anywhere; opacity: 0; pointer-events: none; transition: opacity var(--duration-normal), transform var(--duration-normal); z-index: var(--z-toast); }

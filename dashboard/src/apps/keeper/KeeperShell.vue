@@ -27,6 +27,12 @@ function isActive(item) {
   return item.exact ? route.path === item.path : route.path.startsWith(item.path)
 }
 
+/** 宽屏顶栏显示当前分区（侧栏已显示工作台名），窄屏侧栏隐藏时回退为工作台名 */
+const currentLabel = computed(() => {
+  const item = NAV.find(entry => isActive(entry))
+  return item ? item.label : META.shellTitle
+})
+
 async function onLogout() {
   if (loggingOut.value) return
   loggingOut.value = true
@@ -88,7 +94,8 @@ async function onLogout() {
       <header class="topbar">
         <div class="topbar-brand">
           <span class="brand-mark"><Icon :name="META.icon" :size="20" /></span>
-          <strong>{{ META.shellTitle }}</strong>
+          <strong class="tb-desk">{{ currentLabel }}</strong>
+          <strong class="tb-phone">{{ META.shellTitle }}</strong>
         </div>
         <span class="role-badge"><Icon :name="META.icon" :size="16" />{{ META.name }}</span>
       </header>

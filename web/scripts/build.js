@@ -68,7 +68,7 @@ function main() {
 
   // SEO 派生字段：og 图绝对地址与结构化数据（JSON-LD），内容文件中无需填写
   const siteUrl = String(content.site.url || '').replace(/\/?$/, '/');
-  content.site.ogImageUrl = siteUrl + 'og.png';
+  content.site.ogImageUrl = siteUrl + 'og.jpg';
   content.site.jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
     '@graph': [
@@ -135,9 +135,9 @@ function main() {
     }
   }
 
-  // SEO 附属文件：分享图、robots.txt、sitemap.xml
-  const ogSrc = path.join(SRC, 'og.png');
-  if (fs.existsSync(ogSrc)) fs.copyFileSync(ogSrc, path.join(DIST, 'og.png'));
+  // SEO 附属文件：分享图（1200×630，社交平台标准尺寸）、robots.txt、sitemap.xml
+  const ogSrc = path.join(SRC, 'og.jpg');
+  if (fs.existsSync(ogSrc)) fs.copyFileSync(ogSrc, path.join(DIST, 'og.jpg'));
 
   fs.writeFileSync(path.join(DIST, 'robots.txt'),
     'User-agent: *\nAllow: /\n\nSitemap: ' + siteUrl + 'sitemap.xml\n');
@@ -151,7 +151,7 @@ function main() {
     '</urlset>\n');
 
   if (!process.exitCode) {
-    console.log('[ok] build complete -> dist/ (index.html, css/style.css, js/app.js, favicon.svg, assets/, robots.txt, sitemap.xml, og.png)');
+    console.log('[ok] build complete -> dist/ (index.html, css/style.css, js/app.js, favicon.svg, assets/, robots.txt, sitemap.xml, og.jpg)');
   }
 }
 

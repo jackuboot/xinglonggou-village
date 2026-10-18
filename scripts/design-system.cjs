@@ -14,11 +14,8 @@ function renderTokens(tokens) {
     for (const [name, value] of Object.entries(tokens[layer])) lines.push(`  --${name}: ${cssValue(value)};`);
   }
   lines.push('}');
-  for (const [role, values] of Object.entries(tokens.themes)) {
-    lines.push(`\n[data-role="${role}"] {`);
-    for (const [name, value] of Object.entries(values)) lines.push(`  --${name}: ${cssValue(value)};`);
-    lines.push('}');
-  }
+  // 五个工作台与官网共用同一套颜色，因此不再生成 [data-role] 覆盖块；
+  // 组件层的 --role-* 默认值即全站统一值，页面上的 data-role 只作为结构/测试钩子。
   return lines.join('\n') + '\n';
 }
 function svg(registry, body) {
@@ -35,7 +32,7 @@ ${renderTokens(tokens)}
 <header><div class="eyebrow">兴隆沟村 / DESIGN SYSTEM ${escape(tokens.version)}</div><h1>山野有温度，界面有秩序。</h1><p>这是设计组件样本，不是业务页面。来自统一设计源，执行生成命令即可同步；规范与变更流程见 <a href="MASTER.md">MASTER.md</a>。</p></header>
 <section aria-labelledby="palette"><h2 id="palette">01 / 颜色与语义</h2><div class="grid">${palette.map(name => `<div class="panel"><div class="swatch" style="background:var(--color-${name})"></div><code>--color-${name}</code></div>`).join('')}</div><p class="note">深林绿用于主要操作；麦穗金用于强调与装饰，正文使用深金 accent-ink。不要用金底白字，不要以颜色单独表达角色或状态。</p></section>
 <section aria-labelledby="states"><h2 id="states">02 / 控件与状态</h2><div class="panel"><div class="row"><button class="btn primary" data-feedback="示例：主要操作已完成">主要操作</button><button class="btn" data-feedback="示例：次要操作已完成">次要操作</button><button class="btn danger" data-feedback="仅展示危险操作外观，不执行删除">危险操作样本</button><button class="btn primary" disabled>处理中…</button></div><p id="feedback" role="status" aria-live="polite">可用 Tab 检查焦点，用 Enter / 空格激活按钮。此页不会访问后端。</p><label for="example">输入框样本</label><input id="example" placeholder="正文输入 16px，控件至少 44px" aria-describedby="input-help"><p id="input-help">标签始终可见；错误说明原因并给出恢复方法；加载状态防止重复提交。</p></div></section>
-<section aria-labelledby="roles"><h2 id="roles">03 / 角色主题，不复制布局</h2><div class="grid">${Object.entries({farmer:'农户 · 禾绿',keeper:'入库员 · 土褐',consumer:'消费者 · 深林绿',auditor:'审计员 · 蓝灰',admin:'管理后台 · 墨绿深金'}).map(([id,label])=>`<div class="panel role" data-role="${id}"><strong>${label}</strong><p>标签文字 + 图标 + 当前项指示，不能只依赖颜色。</p><span>深色侧栏辅助文字</span></div>`).join('')}</div></section>
+<section aria-labelledby="roles"><h2 id="roles">03 / 角色标识，共用同一色系</h2><div class="grid">${[['farmer', '农户'], ['keeper', '入库员'], ['consumer', '消费者'], ['auditor', '审计员'], ['admin', '管理后台']].map(([id, label]) => `<div class="panel role" data-role="${id}"><strong>${label}</strong><p>五个工作台与官网共用深林绿 + 麦穗金，不再各自配色；靠名称、图标与当前项标识区分，不能只依赖颜色。</p><span>深色侧栏辅助文字</span></div>`).join('')}</div></section>
 <section aria-labelledby="layout"><h2 id="layout">04 / 布局与交互约束</h2><div class="panel"><p>4px 基础间距；内容上限 1120px；工作台 900px 切换侧栏与底部导航；官网以内容实际拥挤点确定导航断点。320 / 375 / 768 / 1024 / 1440px 检查，不用 overflow-x:hidden 掩盖布局问题。</p><p>圆角：输入 12px、工作台卡片 16px、大面板 20px、工作台主按钮胶囊；官网编辑式控件/产品卡片 10px。普通交互 150–300ms，静态卡片不浮动，尊重减少动态效果与安全区。</p><p>当前仅维护浅色内容 + 深色品牌区，不宣称支持全站暗色模式。</p></div></section>
 <section aria-labelledby="icons"><h2 id="icons">05 / 单一 SVG 图标目录</h2><label for="icon-filter">按名称筛选图标</label><input id="icon-filter" type="search" placeholder="例如 leaf、user、arrow"><div class="grid icons">${Object.entries(registry.paths).map(([name,body])=>`<div class="panel icon" data-icon="${name}">${svg(registry,body)}<code>${name}</code></div>`).join('')}</div><p>viewBox 24 × 24，统一 1.8 描边，currentColor。16 / 20 / 24px 为常用视觉尺寸，点击区域独立满足 44px；装饰图标隐藏于读屏，纯图标按钮由按钮提供名称。</p></section>
 <footer><p>修改依据：现有项目品牌、UI/UX Pro Max 检索与 WCAG 2.2。此目录自动生成，请勿手改。</p></footer>

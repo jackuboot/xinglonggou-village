@@ -51,6 +51,15 @@
 }
 .workspace .topbar-brand { display: flex; align-items: center; gap: var(--space-2); min-width: 0; flex: 1; font-size: var(--text-base); }
 .workspace .topbar-brand strong { min-width: 0; }
+/* 宽屏顶栏只显示当前分区：工作台名已在侧栏，避免同一屏重复出现同一个标题 */
+.workspace .tb-phone { display: none; }
+@media (min-width: 900px) {
+  .workspace .topbar-brand .brand-mark { display: none; }
+}
+@media (max-width: 899px) {
+  .workspace .tb-desk { display: none; }
+  .workspace .tb-phone { display: inline; }
+}
 .workspace .role-badge {
   display: inline-flex;
   align-items: center;
@@ -97,7 +106,8 @@
   .workspace .side-brand { display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-2) var(--space-4); }
   .workspace .brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.5; }
   .workspace .brand-text strong { font-size: var(--text-base); }
-  .workspace .brand-text small { font-size: var(--text-xs); color: var(--color-on-dark-muted); text-wrap: balance; }
+  /* 中文副标题只在空格/「·」处换行：默认可在任意汉字间断行，配合 balance 会从词中间劈开 */
+  .workspace .brand-text small { font-size: var(--text-xs); color: var(--color-on-dark-muted); word-break: keep-all; overflow-wrap: normal; text-wrap: wrap; }
   .workspace .side-nav { display: flex; flex-direction: column; gap: var(--space-2); flex: 1 0 auto; }
   .workspace :is(.side-item, .side-switch, .side-link) {
     display: flex;
@@ -115,7 +125,8 @@
   }
   .workspace :is(.side-item, .side-switch, .side-link) svg { flex: none; }
   .workspace :is(.side-item, .side-switch, .side-link):hover { background: var(--color-overlay-hover); color: var(--color-on-dark); }
-  .workspace .side-item.active { background: var(--color-overlay-active); color: var(--color-on-dark); font-weight: 700; box-shadow: inset 3px 0 var(--role-accent-light); }
+  /* 选中态只用底色 + 字重 + 图标色：内嵌条纹会跟着圆角弯折，看起来像渲染错位 */
+  .workspace .side-item.active { background: var(--color-overlay-active); color: var(--color-on-dark); font-weight: 700; }
   .workspace .side-item.active svg { color: var(--role-accent-light); }
   .workspace .side-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-2) 0; border-top: 1px solid var(--color-overlay-border); }
   .workspace .side-user { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
@@ -142,7 +153,8 @@
   }
   .workspace .tab-item { flex: 1; min-width: 0; min-height: var(--control-height); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: var(--space-1); padding: var(--space-1); border-radius: var(--radius-sm); font-size: var(--text-xs); line-height: 1.4; color: var(--color-text-muted); text-align: center; }
   .workspace .tab-item svg { flex: none; }
-  .workspace .tab-item.active { color: var(--role-accent-ink); background: var(--role-accent-soft); font-weight: 700; box-shadow: inset 0 3px var(--role-accent); }
+  /* 同上：底部导航的当前项用底色 + 字重 + 图标色，不加内嵌条纹 */
+  .workspace .tab-item.active { color: var(--role-accent-ink); background: var(--role-accent-soft); font-weight: 700; }
   .workspace[data-role="admin"] .tabbar { background: var(--role-deep); border-color: var(--color-overlay-border); }
   .workspace[data-role="admin"] .tab-item { color: var(--color-on-dark-muted); }
   .workspace[data-role="admin"] .tab-item.active { background: var(--color-overlay-active); color: var(--role-accent-light); }

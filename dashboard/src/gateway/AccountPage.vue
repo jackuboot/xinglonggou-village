@@ -1,17 +1,23 @@
 <script setup>
-/** 账号页：身份信息、用户 UID、切换身份与退出；不承载管理授权入口。 */
+/**
+ * 账号页：身份、用户 UID、切换身份与退出；不承载管理授权入口。
+ * 版式与角色首页同一套区块语言；账号与复制逻辑不变。
+ */
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/core/components/Icon.vue'
 import { useAuth } from '@/core/composables/useAuth'
 import { useToast } from '@/core/composables/useToast'
 import { ROLES, availableWorkspaces } from '@/core/roles'
 import { BRAND, SITE_URL } from '@/core/config'
 
+const route = useRoute()
 const router = useRouter()
 const { state, maskPhone, phoneOf, uidOf, logout } = useAuth()
 const { toast } = useToast()
 
+/** 当前所在的工作台（/farmer/account → farmer），用于小标与身份图标；不改权限判断 */
+const role = computed(() => ROLES[route.path.split('/')[1]] || null)
 const displayPhone = maskPhone(phoneOf(state.user)) || '已登录'
 const uid = computed(() => uidOf(state.user))
 const myRoles = computed(() => state.roles.map(id => ROLES[id]).filter(Boolean))
@@ -52,43 +58,46 @@ async function onLogout() {
 
 <template>
   <div class="page account">
-    <h1>我的账号</h1>
-    <div class="card me">
-      <span class="avatar"><Icon name="user" :size="28" /></span>
-      <div class="me-info">
-        <h2>{{ displayPhone }}</h2>
-        <div class="me-chips" aria-label="已开通身份">
-          <span v-for="r in myRoles" :key="r.id" class="chip" :data-role="r.id">
-            <Icon :name="r.icon" :size="16" />{{ r.name }}
-          </span>
-        </div>
-      </div>
-    </div>
+    <p class="page-kicker">{{ role ? role.name : '工作台' }} · 我的</p>
+    <h1 class="page-title">我的账号</h1>
+    <p class="page-lead">这个账号用手机号登录；需要新身份时，把下面的用户 UID 提供给管理员。</p>
 
-    <div class="card list">
-      <div class="row">
-        <span class="row-label">用户 UID</span>
-        <span class="row-value uid">
-          <code>{{ uid || '—' }}</code>
-          <button v-if="uid" type="button" class="copy-btn" @click="copyUid" title="复制 UID（授权时提供给管理员）">
-            <Icon name="doc" :size="16" />复制 UID
-          </button>
-        </span>
+    <section class="page-section" aria-labelledby="id-heading">
+      <h2 id="id-heading" class="section-label">已开通身份</h2>
+      <div class="id-row">
+        <span class="id-mark"><Icon :name="role ? role.icon : 'user'" :size="22" /></span>
+        <strong class="id-phone">{{ displayPhone }}</strong>
       </div>
-      <div class="row uid-tip">
-        <span>申请开通农户 / 入库员 / 审计员身份时，将 UID 提供给管理员即可。</span>
-      </div>
-      <div v-for="row in INFO" :key="row.label" class="row">
-        <span class="row-label">{{ row.label }}</span>
-        <span class="row-value">{{ row.value }}</span>
-      </div>
-    </div>
+      <ul class="id-chips" aria-label="已开通身份">
+        <li v-for="r in myRoles" :key="r.id" :data-role="r.id">
+          <Icon :name="r.icon" :size="16" />{{ r.name }}
+        </li>
+      </ul>
+    </section>
 
-    <button v-if="workspaces.length > 1" type="button" class="btn btn-ghost switch" @click="goSelect">
-      <Icon name="swap" :size="20" />切换身份（{{ workspaces.length }} 个工作台）
-    </button>
-    <div class="actions">
-      <a class="btn btn-ghost" :href="SITE_URL">返回官网</a>
+    <section class="page-section" aria-labelledby="uid-heading">
+      <h2 id="uid-heading" class="section-label">用户 UID</h2>
+      <div class="uid-row">
+        <code>{{ uid || '—' }}</code>
+        <button v-if="uid" type="button" class="copy-btn" @click="copyUid" title="复制 UID（授权时提供给管理员）">
+          <Icon name="doc" :size="16" />复制 UID
+        </button>
+      </div>
+      <p class="section-note">申请开通农户 / 入库员 / 审计员身份时，将这个 UID 提供给管理员即可。</p>
+    </section>
+
+    <section class="page-section" aria-labelledby="info-heading">
+      <h2 id="info-heading" class="section-label">账号说明</h2>
+      <ul class="def-list">
+        <li v-for="row in INFO" :key="row.label"><span>{{ row.label }}</span><strong>{{ row.value }}</strong></li>
+      </ul>
+    </section>
+
+    <div class="foot-actions">
+      <button v-if="workspaces.length > 1" type="button" class="btn btn-ghost switch" @click="goSelect">
+        <Icon name="swap" :size="20" />切换身份（{{ workspaces.length }} 个工作台）
+      </button>
+      <a class="back-site" :href="SITE_URL"><span class="back-arrow" aria-hidden="true"><Icon name="arrowRight" :size="16" /></span>返回 {{ BRAND.name }}官网</a>
       <button type="button" class="btn btn-danger" :disabled="loggingOut" :aria-busy="loggingOut" @click="onLogout">
         <Icon name="logout" :size="20" />{{ loggingOut ? '退出中…' : '退出登录' }}
       </button>
@@ -97,35 +106,35 @@ async function onLogout() {
 </template>
 
 <style scoped>
-.account { max-width: 40rem; min-width: 0; overflow-wrap: anywhere; }
-h1 { font-size: var(--text-2xl); line-height: 1.4; margin-bottom: var(--space-5); }
-.me { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-6); background: linear-gradient(120deg, var(--color-surface) 55%, var(--role-accent-soft, var(--color-primary-soft))); }
-.avatar { display: inline-flex; align-items: center; justify-content: center; width: 56px; height: 56px; border-radius: var(--radius-pill); background: var(--role-accent-soft, var(--color-primary-soft)); color: var(--role-accent-ink, var(--color-primary)); flex: none; }
-.me-info { min-width: 0; }
-.me-info h2 { font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-2); }
-.me-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.chip { font-size: var(--text-xs); color: var(--role-accent-ink); background: var(--role-accent-soft); max-width: 100%; }
-.chip svg { flex: none; }
-.list { margin-top: var(--space-4); padding: var(--space-2) var(--space-5); }
-.row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-4) 0; border-bottom: 1px dashed var(--color-border); font-size: var(--text-sm); }
-.row:last-child { border-bottom: none; }
-.row-label { color: var(--color-text-muted); }
-.row-value { font-weight: 500; text-align: right; min-width: 0; max-width: 100%; }
-.uid { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; justify-content: flex-end; flex: 1 1 14rem; }
-.uid code { max-width: 100%; font-size: var(--text-xs); background: var(--color-surface-muted); border-radius: var(--radius-xs); padding: var(--space-1) var(--space-2); overflow-wrap: anywhere; user-select: all; }
-.copy-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: var(--control-height); font-size: var(--text-sm); font-weight: 600; color: var(--color-primary); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-pill); transition: border-color var(--duration-fast) var(--ease-standard), background-color var(--duration-fast) var(--ease-standard); }
-.copy-btn:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
-.uid-tip { justify-content: flex-start; font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.7; }
-.switch { width: 100%; margin-top: var(--space-5); }
-.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); }
-.actions .btn { flex: 1 1 10rem; }
-.btn { min-width: 0; min-height: var(--control-height); white-space: normal; }
-:is(button, a):focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-@media (max-width: 480px) {
-  .me { flex-direction: column; align-items: flex-start; padding: var(--space-5); }
-  .row { align-items: flex-start; flex-direction: column; }
-  .row-value { text-align: left; }
-  .uid { flex-basis: auto; justify-content: flex-start; }
+.account { max-width: 40rem; }
+
+.id-row { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-4); }
+.id-mark { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; border-radius: var(--radius-md); background: var(--role-accent-soft, var(--color-primary-soft)); color: var(--role-accent-ink, var(--color-primary)); }
+.id-phone { min-width: 0; font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
+.id-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.id-chips li { display: inline-flex; align-items: center; gap: var(--space-1); max-width: 100%; padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); font-size: var(--text-xs); font-weight: 600; color: var(--role-accent-ink, var(--color-primary)); background: var(--role-accent-soft, var(--color-primary-soft)); }
+.id-chips svg { flex: none; }
+
+.uid-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-4); }
+.uid-row code { max-width: 100%; padding: var(--space-2) var(--space-3); border-radius: var(--radius-xs); font-size: var(--text-xs); color: var(--color-text-muted); background: var(--color-surface-muted); overflow-wrap: anywhere; user-select: all; }
+.copy-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: var(--control-height); padding: var(--space-2) var(--space-4); border: 1px solid var(--color-border-strong); border-radius: var(--radius-pill); font-size: var(--text-sm); font-weight: 600; color: var(--color-primary); transition: background-color var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard); }
+.copy-btn svg { flex: none; }
+.copy-btn:active { background: var(--color-primary-soft); }
+
+.def-list { margin-top: var(--space-3); border-top: 1px solid var(--color-border-strong); }
+.def-list li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2) var(--space-4); padding-block: var(--space-3); border-bottom: 1px solid var(--color-border); font-size: var(--text-sm); }
+.def-list span { color: var(--color-text-muted); }
+.def-list strong { font-weight: 500; }
+
+.foot-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--color-border); }
+.switch { width: 100%; }
+.back-site { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-height); font-size: var(--text-sm); font-weight: 600; color: var(--color-primary); }
+.back-arrow { display: inline-flex; transform: rotate(180deg); }
+.back-arrow svg { width: 16px; height: 16px; }
+.foot-actions .btn { min-width: 0; white-space: normal; }
+
+@media (hover: hover) {
+  .copy-btn:hover { border-color: var(--color-primary); background: var(--color-primary-soft); }
 }
 @media (prefers-reduced-motion: reduce) { .copy-btn { transition: none; } }
 </style>

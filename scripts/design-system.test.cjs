@@ -32,11 +32,16 @@ test('Token引用循环和缺失会失败', () => {
   tokens.semantic.b = '{missing}';
   assert.throws(() => resolveToken('a', tokens), /未定义/);
 });
-test('两端快照一致，角色覆盖可解析', () => {
+test('两端快照一致，角色共用同一套颜色', () => {
   const generated = outputs();
   assert.equal(generated['web/src/css/tokens.css'], generated['dashboard/src/core/styles/tokens.css']);
   assert.equal(resolveToken('brand', load('tokens.json')), '#2f6b4f');
   const tokens = load('tokens.json');
-  assert.equal(resolveToken('role-accent', tokens, tokens.themes.admin), '#795719');
-  assert.ok(renderTokens(tokens).includes('[data-role="admin"]'));
+  // 五个工作台不再各自配色：--role-* 只解析到组件层的统一值
+  assert.equal(resolveToken('role-accent', tokens), '#2f6b4f');
+  assert.equal(resolveToken('role-deep', tokens), '#173f2e');
+  assert.equal(resolveToken('role-accent-ink', tokens), '#1f4d38');
+  assert.equal(tokens.themes, undefined);
+  assert.deepEqual(tokens.roles, ['farmer', 'keeper', 'consumer', 'auditor', 'admin']);
+  assert.ok(!renderTokens(tokens).includes('[data-role='));
 });

@@ -54,17 +54,7 @@ function run() {
   for (const name of Object.keys(values)) {
     try { resolveToken(name, tokens); } catch (e) { errors.push(e.message); }
   }
-  for (const [role, theme] of Object.entries(tokens.themes)) {
-    for (const name of Object.keys(theme)) {
-      try { resolveToken(name, tokens, theme); } catch (e) { errors.push(`${role}: ${e.message}`); }
-    }
-  }
   const pairs = tokens.contrastPairs.map(([fg, bg, min]) => ({ label: `${fg}/${bg}`, fg, bg, min, theme: {} }));
-  for (const [role, theme] of Object.entries(tokens.themes)) {
-    for (const [fg, bg, min] of [['role-accent-ink', 'role-accent-soft', 4.5], ['role-accent', 'color-surface', 4.5], ['color-on-dark-muted', 'role-deep', 4.5], ['role-accent-light', 'role-deep', 3]]) {
-      pairs.push({ label: `${role}:${fg}/${bg}`, fg, bg, min, theme });
-    }
-  }
   const ratios = [];
   for (const pair of pairs) {
     try {
@@ -105,7 +95,7 @@ function run() {
   for (const [name, body] of Object.entries(icons.paths)) {
     if (/<(?:script|foreignObject|image|use)\b|\bon\w+=|\b(?:href|style|stroke-width)=|#[\da-f]{3,8}\b/i.test(body)) errors.push(`图标 ${name} 包含不允许的属性或内容`);
   }
-  for (const role of Object.keys(tokens.themes)) {
+  for (const role of tokens.roles) {
     const shell = sources.find(file => file.endsWith(`${role[0].toUpperCase() + role.slice(1)}Shell.vue`));
     if (!shell) { errors.push(`缺少 ${role} Shell`); continue; }
     const text = fs.readFileSync(shell, 'utf8');
