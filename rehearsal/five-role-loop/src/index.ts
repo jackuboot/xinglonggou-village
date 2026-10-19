@@ -6,7 +6,7 @@ import {
   runDispatcher,
   runReviewAgent,
 } from './application/active-agents'
-import type { Actor, Batch, Booking, Plot } from './domain/types'
+import type { Actor, Batch, Booking, Produce } from './domain/types'
 import type { Result } from './domain/result'
 import type { DomainError } from './domain/errors'
 
@@ -32,23 +32,24 @@ function value<T>(result: Result<T, DomainError>): T {
   return result.value
 }
 
-const plot = value(
-  (await gateway.invoke(farmer, 'plot.submit', {
+const produce = value(
+  (await gateway.invoke(farmer, 'produce.submit', {
     groupName: '3组',
-    areaMu: 5,
-    crop: '茶',
-  })) as Result<Plot, DomainError>
+    vegetableName: '时令蔬菜',
+    quantityKg: 120,
+    harvestDate: '2026-10-18',
+  })) as Result<Produce, DomainError>
 )
 const reviewed = value(
-  (await gateway.invoke(keeper, 'plot.review', {
-    plotId: plot.id,
+  (await gateway.invoke(keeper, 'produce.review', {
+    produceId: produce.id,
     decision: 'approve',
-  })) as Result<Plot, DomainError>
+  })) as Result<Produce, DomainError>
 )
 const batch = value(
   (await gateway.invoke(keeper, 'batch.create', {
-    plotId: plot.id,
-    productName: '高山云雾茶',
+    produceId: produce.id,
+    productName: '时令蔬菜',
   })) as Result<Batch, DomainError>
 )
 const booking = value(
@@ -59,11 +60,12 @@ const booking = value(
 )
 
 const pending = value(
-  (await gateway.invoke(farmer, 'plot.submit', {
+  (await gateway.invoke(farmer, 'produce.submit', {
     groupName: '4组',
-    areaMu: 8,
-    crop: '茶',
-  })) as Result<Plot, DomainError>
+    vegetableName: '时令蔬菜',
+    quantityKg: 80,
+    harvestDate: '2026-10-18',
+  })) as Result<Produce, DomainError>
 )
 const reviewSuggestion = await runReviewAgent(keeper, pending.id, gateway)
 const alerts = await runAlertSentinel(admin, gateway)
@@ -87,7 +89,7 @@ const status = value(
   (await gateway.invoke(admin, 'system.status', {})) as Result<unknown, DomainError>
 )
 
-console.log('plot:', reviewed.status)
+console.log('produce:', reviewed.status)
 console.log('batch:', batch.status)
 console.log('booking:', booking)
 console.log('audit events:', audit.length)

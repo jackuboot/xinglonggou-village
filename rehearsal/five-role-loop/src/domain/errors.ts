@@ -1,8 +1,8 @@
 export type DomainErrorCode =
   | 'AUTH_DENIED'
   | 'INPUT_INVALID'
-  | 'PLOT_NOT_FOUND'
-  | 'PLOT_INVALID_STATUS'
+  | 'PRODUCE_NOT_FOUND'
+  | 'PRODUCE_INVALID_STATUS'
   | 'BATCH_NOT_FOUND'
   | 'VILLAGE_DENIED'
 

@@ -4,7 +4,7 @@ import type { Result } from '../domain/result'
 import type { RoleGateway } from './role-gateway'
 
 export interface ReviewSuggestion {
-  readonly plotId: string
+  readonly produceId: string
   readonly recommendation: 'approve' | 'reject'
   readonly confidence: number
   readonly reasons: readonly string[]
@@ -26,17 +26,17 @@ export interface AlertScanResult {
 
 /**
  * 审核 Agent：只生成建议，不写业务状态。
- * 人工确认仍走 plot.review。
+ * 人工确认仍走 produce.review。
  */
 export async function runReviewAgent(
   actor: Actor,
-  plotId: string,
+  produceId: string,
   gateway: RoleGateway
 ): Promise<Result<ReviewSuggestion, DomainError>> {
   const result = await gateway.invoke(
     actor,
     'review.suggest',
-    { plotId },
+    { produceId },
     { agentId: 'review-agent' }
   )
   if (!result.ok) return result

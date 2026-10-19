@@ -4,7 +4,7 @@ import { err, ok, type Result } from '../domain/result'
 import type { RoleGateway } from './role-gateway'
 
 const ROLE_TOOL: Record<Role, ToolName> = {
-  farmer: 'plot.list',
+  farmer: 'produce.list',
   keeper: 'batch.list',
   consumer: 'trace.list',
   auditor: 'audit.query',
@@ -35,9 +35,9 @@ export async function askRoleAssistant(
   if (!result.ok) return err(result.error)
 
   const data = result.value
-  if (tool === 'plot.list' && Array.isArray(data)) {
+  if (tool === 'produce.list' && Array.isArray(data)) {
     return ok({
-      answer: `您好，${question}。您名下共有 ${data.length} 块地块。`,
+      answer: `您好，${question}。您名下共有 ${data.length} 个蔬菜批次。`,
       data,
     })
   }

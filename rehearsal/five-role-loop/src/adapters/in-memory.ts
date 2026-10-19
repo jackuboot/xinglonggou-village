@@ -1,4 +1,4 @@
-import type { Alert, AuditEvent, Batch, Booking, Plot } from '../domain/types'
+import type { Alert, AuditEvent, Batch, Booking, Produce } from '../domain/types'
 
 export interface KeeperInfo {
   readonly uid: string
@@ -6,7 +6,7 @@ export interface KeeperInfo {
 }
 
 export interface Store {
-  readonly plots: Map<string, Plot>
+  readonly produces: Map<string, Produce>
   readonly batches: Map<string, Batch>
   readonly bookings: Map<string, Booking>
   readonly alerts: Map<string, Alert>
@@ -16,7 +16,7 @@ export interface Store {
 
 export function createStore(): Store {
   return {
-    plots: new Map(),
+    produces: new Map(),
     batches: new Map(),
     bookings: new Map(),
     alerts: new Map(),

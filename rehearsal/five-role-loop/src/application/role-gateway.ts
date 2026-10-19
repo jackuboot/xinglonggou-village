@@ -6,7 +6,7 @@ import {
   type AuditEvent,
   type Batch,
   type Booking,
-  type Plot,
+  type Produce,
   type ToolName,
   type TraceView,
 } from '../domain/types'
@@ -33,13 +33,14 @@ export interface RoleGateway {
   ): Promise<Result<unknown, DomainError>>
 }
 
-function traceView(batch: Batch, plot: Plot | undefined): TraceView {
+function traceView(batch: Batch, produce: Produce | undefined): TraceView {
   return {
     batchId: batch.id,
     productName: batch.productName,
-    groupName: plot?.groupName ?? '未知',
-    areaMu: plot?.areaMu ?? 0,
-    crop: plot?.crop ?? '未知',
+    groupName: produce?.groupName ?? '未知',
+    vegetableName: produce?.vegetableName ?? '未知',
+    quantityKg: produce?.quantityKg ?? 0,
+    harvestDate: produce?.harvestDate ?? '未知',
     batchStatus: batch.status,
   }
 }
@@ -90,66 +91,67 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
 
       const data = parsed.data as Record<string, unknown>
 
-      if (tool === 'plot.submit') {
-        const plot: Plot = {
-          id: deps.ids.next('plot'),
-          ownerUid: actor.uid,
+      if (tool === 'produce.submit') {
+        const produce: Produce = {
+          id: deps.ids.next('produce'),
+          farmerUid: actor.uid,
           villageId: actor.villageId,
           groupName: String(data.groupName),
-          areaMu: Number(data.areaMu),
-          crop: String(data.crop),
+          vegetableName: String(data.vegetableName),
+          quantityKg: Number(data.quantityKg),
+          harvestDate: String(data.harvestDate),
           status: 'submitted',
           submittedAt: deps.clock.nowIso(),
         }
-        store.plots.set(plot.id, plot)
-        await audit(actor, 'plot.submitted', { plotId: plot.id }, options.agentId)
-        return ok(plot)
+        store.produces.set(produce.id, produce)
+        await audit(actor, 'produce.submitted', { produceId: produce.id }, options.agentId)
+        return ok(produce)
       }
 
-      if (tool === 'plot.review') {
-        const plot = store.plots.get(String(data.plotId))
-        if (!plot) return err(domainError('PLOT_NOT_FOUND', '地块不存在'))
-        if (!actor.roles.includes('admin') && actor.villageId !== plot.villageId) {
+      if (tool === 'produce.review') {
+        const produce = store.produces.get(String(data.produceId))
+        if (!produce) return err(domainError('PRODUCE_NOT_FOUND', '蔬菜批次不存在'))
+        if (!actor.roles.includes('admin') && actor.villageId !== produce.villageId) {
           await audit(actor, 'access.denied', { tool, reason: 'village' }, options.agentId)
-          return err(domainError('VILLAGE_DENIED', '不能审核其他村的地块'))
+          return err(domainError('VILLAGE_DENIED', '不能审核其他村的蔬菜批次'))
         }
-        if (plot.status !== 'submitted') {
-          return err(domainError('PLOT_INVALID_STATUS', '当前状态不可审核'))
+        if (produce.status !== 'submitted') {
+          return err(domainError('PRODUCE_INVALID_STATUS', '当前状态不可审核'))
         }
-        const next: Plot = {
-          ...plot,
+        const next: Produce = {
+          ...produce,
           status: data.decision === 'approve' ? 'active' : 'rejected',
         }
-        store.plots.set(plot.id, next)
+        store.produces.set(produce.id, next)
         await audit(
           actor,
-          data.decision === 'approve' ? 'plot.approved' : 'plot.rejected',
-          { plotId: plot.id },
+          data.decision === 'approve' ? 'produce.approved' : 'produce.rejected',
+          { produceId: produce.id },
           options.agentId
         )
         return ok(next)
       }
 
-      if (tool === 'plot.list') {
+      if (tool === 'produce.list') {
         return ok(
-          [...store.plots.values()].filter((plot) => plot.ownerUid === actor.uid)
+          [...store.produces.values()].filter((produce) => produce.farmerUid === actor.uid)
         )
       }
 
       if (tool === 'batch.create') {
-        const plot = store.plots.get(String(data.plotId))
-        if (!plot) return err(domainError('PLOT_NOT_FOUND', '地块不存在'))
-        if (actor.villageId !== plot.villageId) {
+        const produce = store.produces.get(String(data.produceId))
+        if (!produce) return err(domainError('PRODUCE_NOT_FOUND', '蔬菜批次不存在'))
+        if (actor.villageId !== produce.villageId) {
           await audit(actor, 'access.denied', { tool, reason: 'village' }, options.agentId)
           return err(domainError('VILLAGE_DENIED', '不能为其他村创建批次'))
         }
-        if (plot.status !== 'active') {
-          return err(domainError('PLOT_INVALID_STATUS', '地块未生效'))
+        if (produce.status !== 'active') {
+          return err(domainError('PRODUCE_INVALID_STATUS', '蔬菜批次未生效'))
         }
         const batch: Batch = {
           id: deps.ids.next('batch'),
-          plotId: plot.id,
-          villageId: plot.villageId,
+          produceId: produce.id,
+          villageId: produce.villageId,
           productName: String(data.productName),
           status: 'available',
           createdBy: actor.uid,
@@ -172,14 +174,14 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
         return ok(
           [...store.batches.values()]
             .filter((batch) => batch.status === 'available')
-            .map((batch) => traceView(batch, store.plots.get(batch.plotId)))
+            .map((batch) => traceView(batch, store.produces.get(batch.produceId)))
         )
       }
 
       if (tool === 'trace.query') {
         const batch = store.batches.get(String(data.batchId))
         if (!batch) return err(domainError('BATCH_NOT_FOUND', '批次不存在'))
-        return ok(traceView(batch, store.plots.get(batch.plotId)))
+        return ok(traceView(batch, store.produces.get(batch.produceId)))
       }
 
       if (tool === 'booking.create') {
@@ -217,26 +219,26 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
       }
 
       if (tool === 'review.suggest') {
-        const plot = store.plots.get(String(data.plotId))
-        if (!plot) return err(domainError('PLOT_NOT_FOUND', '地块不存在'))
-        if (!actor.roles.includes('admin') && actor.villageId !== plot.villageId) {
+        const produce = store.produces.get(String(data.produceId))
+        if (!produce) return err(domainError('PRODUCE_NOT_FOUND', '蔬菜批次不存在'))
+        if (!actor.roles.includes('admin') && actor.villageId !== produce.villageId) {
           await audit(actor, 'access.denied', { tool, reason: 'village' }, options.agentId)
-          return err(domainError('VILLAGE_DENIED', '不能查看其他村的地块'))
+          return err(domainError('VILLAGE_DENIED', '不能查看其他村的蔬菜批次'))
         }
-        const suspicious = plot.areaMu > 50
+        const suspicious = produce.quantityKg > 500
         const suggestion = {
-          plotId: plot.id,
+          produceId: produce.id,
           recommendation: suspicious ? 'reject' : 'approve',
           confidence: suspicious ? 0.82 : 0.9,
           reasons: suspicious
-            ? ['面积超过 50 亩，请核对承包合同']
-            : ['字段完整', '面积在常见范围'],
+            ? ['申报数量超过 500 公斤，请核对采收记录']
+            : ['字段完整', '数量在常见范围'],
           requiresHumanDecision: true,
         }
         await audit(
           actor,
           'review.suggested',
-          { plotId: plot.id, recommendation: suggestion.recommendation },
+          { produceId: produce.id, recommendation: suggestion.recommendation },
           options.agentId
         )
         return ok(suggestion)
@@ -254,7 +256,7 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
           const alert: Alert = {
             id: deps.ids.next('alert'),
             type,
-            severity: type === 'stale_plot' ? 'warn' : 'critical',
+            severity: type === 'stale_produce' ? 'warn' : 'critical',
             targetId,
             message,
             status: 'open',
@@ -265,9 +267,9 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
           created.push(alert)
         }
 
-        for (const plot of store.plots.values()) {
-          if (plot.status === 'submitted') {
-            raise('stale_plot', plot.id, '地块提交后尚未审核', `stale_plot:${plot.id}`)
+        for (const produce of store.produces.values()) {
+          if (produce.status === 'submitted') {
+            raise('stale_produce', produce.id, '蔬菜批次提交后尚未审核', `stale_produce:${produce.id}`)
           }
         }
         for (const batch of store.batches.values()) {
@@ -363,7 +365,7 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
       }
 
       return ok({
-        plots: store.plots.size,
+        produces: store.produces.size,
         batches: store.batches.size,
         bookings: store.bookings.size,
         alerts: store.alerts.size,

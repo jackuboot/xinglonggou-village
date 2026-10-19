@@ -10,7 +10,7 @@ import type {
   Alert,
   Batch,
   Booking,
-  Plot,
+  Produce,
 } from '../src/domain/types'
 import { makeWorld } from './helpers'
 
@@ -23,23 +23,24 @@ async function seedLoop(options: { seedKeeper?: boolean } = {}) {
   const world = makeWorld(options)
   const { gateway, actors } = world
 
-  const plot = value(
-    (await gateway.invoke(actors.farmer, 'plot.submit', {
+  const produce = value(
+    (await gateway.invoke(actors.farmer, 'produce.submit', {
       groupName: '3组',
-      areaMu: 5,
-      crop: '茶',
-    })) as Result<Plot, DomainError>
+      vegetableName: '时令蔬菜',
+      quantityKg: 120,
+      harvestDate: '2026-10-18',
+    })) as Result<Produce, DomainError>
   )
   value(
-    (await gateway.invoke(actors.keeper, 'plot.review', {
-      plotId: plot.id,
+    (await gateway.invoke(actors.keeper, 'produce.review', {
+      produceId: produce.id,
       decision: 'approve',
-    })) as Result<Plot, DomainError>
+    })) as Result<Produce, DomainError>
   )
   const batch = value(
     (await gateway.invoke(actors.keeper, 'batch.create', {
-      plotId: plot.id,
-      productName: '高山云雾茶',
+      produceId: produce.id,
+      productName: '时令蔬菜',
     })) as Result<Batch, DomainError>
   )
   const booking = value(
@@ -47,19 +48,20 @@ async function seedLoop(options: { seedKeeper?: boolean } = {}) {
       batchId: batch.id,
     })) as Result<Booking, DomainError>
   )
-  return { world, plot, batch, booking }
+  return { world, produce, batch, booking }
 }
 
 describe('主动 Agent：审核、预警、调度', () => {
-  it('审核 Agent 只给建议，不改变地块状态；人工确认后才生效', async () => {
-    const { world, plot } = await seedLoop({ seedKeeper: true })
-    // 新提交一块待审地块
+  it('审核 Agent 只给建议，不改变蔬菜批次状态；人工确认后才生效', async () => {
+    const { world, produce } = await seedLoop({ seedKeeper: true })
+    // 新提交一批待审蔬菜
     const pending = value(
-      (await world.gateway.invoke(world.actors.farmer, 'plot.submit', {
+      (await world.gateway.invoke(world.actors.farmer, 'produce.submit', {
         groupName: '4组',
-        areaMu: 8,
-        crop: '茶',
-      })) as Result<Plot, DomainError>
+        vegetableName: '时令蔬菜',
+        quantityKg: 80,
+        harvestDate: '2026-10-18',
+      })) as Result<Produce, DomainError>
     )
 
     const suggestion = value(
@@ -68,54 +70,56 @@ describe('主动 Agent：审核、预警、调度', () => {
     expect(suggestion.recommendation).toBe('approve')
     expect(suggestion.requiresHumanDecision).toBe(true)
 
-    const stillPending = [...world.store.plots.values()].find(
+    const stillPending = [...world.store.produces.values()].find(
       (item) => item.id === pending.id
     )
     expect(stillPending?.status).toBe('submitted')
 
     value(
-      (await world.gateway.invoke(world.actors.keeper, 'plot.review', {
-        plotId: pending.id,
+      (await world.gateway.invoke(world.actors.keeper, 'produce.review', {
+        produceId: pending.id,
         decision: 'approve',
-      })) as Result<Plot, DomainError>
+      })) as Result<Produce, DomainError>
     )
 
     const suggested = world.store.audit.find(
       (event) => event.type === 'review.suggested'
     )
     expect(suggested?.payload.agentId).toBe('review-agent')
-    const reviewed = [...world.store.plots.values()].find(
-      (item) => item.id === plot.id
+    const reviewed = [...world.store.produces.values()].find(
+      (item) => item.id === produce.id
     )
     expect(reviewed?.status).toBe('active')
   })
 
   it('审核 Agent 对异常面积给出驳回建议', async () => {
     const world = makeWorld()
-    const plot = value(
-      (await world.gateway.invoke(world.actors.farmer, 'plot.submit', {
+    const produce = value(
+      (await world.gateway.invoke(world.actors.farmer, 'produce.submit', {
         groupName: '5组',
-        areaMu: 80,
-        crop: '茶',
-      })) as Result<Plot, DomainError>
+        vegetableName: '时令蔬菜',
+        quantityKg: 800,
+        harvestDate: '2026-10-18',
+      })) as Result<Produce, DomainError>
     )
 
     const suggestion = value(
-      await runReviewAgent(world.actors.keeper, plot.id, world.gateway)
+      await runReviewAgent(world.actors.keeper, produce.id, world.gateway)
     )
     expect(suggestion.recommendation).toBe('reject')
     expect(suggestion.confidence).toBeLessThan(1)
-    expect(suggestion.reasons[0]).toContain('面积')
+    expect(suggestion.reasons[0]).toContain('数量')
   })
 
   it('预警哨兵主动扫描并去重；审计员可确认告警', async () => {
     const world = makeWorld()
-    const plot = value(
-      (await world.gateway.invoke(world.actors.farmer, 'plot.submit', {
+    const produce = value(
+      (await world.gateway.invoke(world.actors.farmer, 'produce.submit', {
         groupName: '6组',
-        areaMu: 5,
-        crop: '茶',
-      })) as Result<Plot, DomainError>
+        vegetableName: '时令蔬菜',
+        quantityKg: 120,
+        harvestDate: '2026-10-18',
+      })) as Result<Produce, DomainError>
     )
 
     const first = value(await runAlertSentinel(world.actors.admin, world.gateway))
@@ -133,7 +137,7 @@ describe('主动 Agent：审核、预警、调度', () => {
         DomainError
       >
     )
-    const alert = alerts.find((item) => item.targetId === plot.id)
+    const alert = alerts.find((item) => item.targetId === produce.id)
     expect(alert).toBeDefined()
     if (!alert) return
 

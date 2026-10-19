@@ -10,20 +10,21 @@ export interface Actor {
   readonly villageId: string
 }
 
-export interface Plot {
+export interface Produce {
   readonly id: string
-  readonly ownerUid: string
+  readonly farmerUid: string
   readonly villageId: string
   readonly groupName: string
-  readonly areaMu: number
-  readonly crop: string
+  readonly vegetableName: string
+  readonly quantityKg: number
+  readonly harvestDate: string
   readonly status: 'submitted' | 'active' | 'rejected'
   readonly submittedAt: string
 }
 
 export interface Batch {
   readonly id: string
-  readonly plotId: string
+  readonly produceId: string
   readonly villageId: string
   readonly productName: string
   readonly status: 'available'
@@ -40,7 +41,7 @@ export interface Booking {
   readonly createdAt: string
 }
 
-export type AlertType = 'stale_plot' | 'unsold_batch' | 'unassigned_booking'
+export type AlertType = 'stale_produce' | 'unsold_batch' | 'unassigned_booking'
 export type AlertSeverity = 'warn' | 'critical'
 export type AlertStatus = 'open' | 'acknowledged'
 
@@ -63,20 +64,21 @@ export interface AuditEvent {
   readonly payload: Readonly<Record<string, unknown>>
 }
 
-/** 公开溯源视图：不含 ownerUid、手机号等敏感字段 */
+/** 公开溯源视图：不含 farmerUid、手机号等敏感字段 */
 export interface TraceView {
   readonly batchId: string
   readonly productName: string
   readonly groupName: string
-  readonly areaMu: number
-  readonly crop: string
+  readonly vegetableName: string
+  readonly quantityKg: number
+  readonly harvestDate: string
   readonly batchStatus: string
 }
 
 export type ToolName =
-  | 'plot.submit'
-  | 'plot.review'
-  | 'plot.list'
+  | 'produce.submit'
+  | 'produce.review'
+  | 'produce.list'
   | 'batch.create'
   | 'batch.list'
   | 'trace.list'
@@ -98,9 +100,9 @@ export interface Capability {
 }
 
 export const CAPABILITIES: Record<ToolName, Capability> = {
-  'plot.submit': { roles: ['farmer'], scope: 'own' },
-  'plot.review': { roles: ['keeper', 'admin'], scope: 'village' },
-  'plot.list': { roles: ['farmer'], scope: 'own' },
+  'produce.submit': { roles: ['farmer'], scope: 'own' },
+  'produce.review': { roles: ['keeper', 'admin'], scope: 'village' },
+  'produce.list': { roles: ['farmer'], scope: 'own' },
   'batch.create': { roles: ['keeper'], scope: 'village' },
   'batch.list': { roles: ['keeper'], scope: 'village' },
   'trace.list': { roles: ['consumer', 'keeper', 'auditor', 'admin'], scope: 'public' },
@@ -118,23 +120,24 @@ export const CAPABILITIES: Record<ToolName, Capability> = {
 }
 
 export const TOOL_INPUTS = {
-  'plot.submit': z
+  'produce.submit': z
     .object({
       groupName: z.string().min(1).max(50),
-      areaMu: z.number().positive().max(10000),
-      crop: z.string().min(1).max(50),
+      vegetableName: z.string().min(1).max(50),
+      quantityKg: z.number().positive().max(5000),
+      harvestDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     })
     .strict(),
-  'plot.review': z
+  'produce.review': z
     .object({
-      plotId: z.string().min(1),
+      produceId: z.string().min(1),
       decision: z.enum(['approve', 'reject']),
     })
     .strict(),
-  'plot.list': z.object({}).strict(),
+  'produce.list': z.object({}).strict(),
   'batch.create': z
     .object({
-      plotId: z.string().min(1),
+      produceId: z.string().min(1),
       productName: z.string().min(1).max(50),
     })
     .strict(),
@@ -145,7 +148,7 @@ export const TOOL_INPUTS = {
   'booking.list': z.object({}).strict(),
   'audit.query': z.object({}).strict(),
   'system.status': z.object({}).strict(),
-  'review.suggest': z.object({ plotId: z.string().min(1) }).strict(),
+  'review.suggest': z.object({ produceId: z.string().min(1) }).strict(),
   'alert.scan': z.object({}).strict(),
   'alert.list': z.object({}).strict(),
   'alert.ack': z.object({ alertId: z.string().min(1) }).strict(),
