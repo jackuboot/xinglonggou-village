@@ -1,4 +1,4 @@
-# 工程规范与 AI 编程约定（v0.7）
+# 工程规范与 AI 编程约定（v0.8）
 
 > 阅读顺序与权威优先级：见本目录《00 · 阅读顺序与权威优先级》；冲突时按该文裁决。
 
@@ -41,7 +41,7 @@
 | 数据库表 | snake_case、复数 | `plots`、`agent_tasks` |
 | 数据库字段 | snake_case | `owner_uid`、`created_at` |
 | 主键 / 外键 | `id` / `<entity>_id` | `id`、`plot_id` |
-| 接口路径 | `/api/v1/<resource>` | `/api/v1/plots` |
+| 外部 HTTP 路径（可选） | `/api/v1/<resource>` | `/api/v1/plots` |
 | 内部 action | `<domain>.<verb>` | `plot.submit`、`batch.create` |
 | 事件 | `<domain>.<entity>.<past_verb>` | `plot.submitted`、`batch.created` |
 | Agent ID | kebab-case、角色前缀 | `farmer-copilot`、`audit-copilot` |
@@ -247,7 +247,7 @@ shared/        types / errors / constants（无业务逻辑）
 ## 十、存量迁移策略
 
 - 工作台现有 JS 不搞一次性重写；新文件用 TS，触碰旧文件时顺带迁移；
-- `roles-admin` 的现有 action（`me/status/bootstrap/list/grant/revoke`）冻结为**存量接口**，只修 bug 不加能力；新增 REST 门面双轨运行，映射与下线节奏见《开放决策处理记录》D-03；
+- `roles-admin` 的现有 action（`me/status/bootstrap/list/grant/revoke`）冻结为**存量接口**，只修 bug 不加能力；新能力先定义契约，前端继续用 `callFunction`，外部/Agent 需要时再暴露 HTTP/MCP 适配器（见《开放决策处理记录》D-03）；
 - 现有 `user_roles` 表保留；新表按 snake_case 复数命名；
 - 每次迁移在 PR 中标注"无行为变更"。
 
