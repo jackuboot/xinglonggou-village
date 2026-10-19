@@ -95,7 +95,16 @@ sequenceDiagram
 - 不是真实农户试用；
 - 不是指标实测，所有数字都是设计判据。
 
-## 七、下一步（设计态）
+## 七、最小实现
+
+本验证已有一条可执行的最小实现：[agri-qa/](agri-qa/README.md)。
+
+- 覆盖：身份/地块范围、工具白名单、RAG 引用、模型失败恢复、低置信度升级、会话串行、监测事件；
+- 结果：10 个用例通过、TypeScript strict 通过；
+- 仍是模拟：ASR、模型、病虫害、pgvector、长驻运行时、CloudBase 部署；
+- 验证报告：[agri-qa/VERIFICATION.md](agri-qa/VERIFICATION.md)。
+
+## 八、下一步（设计态）
 
 1. 为这条业务写 10 条 E2E 用例（正常/越权/无引用/低置信度/人工恢复/断线恢复）；
 2. 定义 `plot.query`、`knowledge.search`、`pest.detect` 三个工具契约；

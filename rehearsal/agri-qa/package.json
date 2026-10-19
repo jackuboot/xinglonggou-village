@@ -1,0 +1,21 @@
+{
+  "name": "agri-qa-rehearsal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "最小业务 + 架构验证：方言语音农事问答（地块上下文 + RAG + 工具网关 + 人工升级 + 监测）",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "demo": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
