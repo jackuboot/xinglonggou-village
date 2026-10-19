@@ -53,4 +53,4 @@ Tests       17 passed (17)
 tsc --noEmit  通过
 ```
 
-执行命令：`npm test`、`npm run typecheck`（目录 `rehearsal/plot-submit`）。
+执行命令：`npm test`、`npm run typecheck`（目录 `rehearsal/plot-submit/appendix`）。代码为附录证据，不作为“最小业务+架构设计”验证的主体。

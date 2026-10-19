@@ -1,7 +1,7 @@
-# 地块提交纵向预演（plot-submit）
+# 地块提交业务切片（设计验证 + 代码附录）
 
-> 目的：用一条最小但完整的纵向切片，验证架构框架能否同时满足**业务目标、监测目标、部署目标、架构规范**。
-> 性质：参考实现（reference slice），不进入生产；用于暴露流程与规范问题，再反哺正式实现。
+> 真正的“最小业务 + 架构设计”验证见 [../minimal-validation.md](../minimal-validation.md)。
+> 本目录是其中一块业务底座的切片：农户提交地块 → 入库员审核 → 生效；代码只作为附录，不是验证结论。
 
 ## 场景
 
@@ -28,11 +28,12 @@
 | `07-acceptance.md` | 验收清单、证据、缺口 |
 | `08-vs-blueprint.md` | 与蓝图 P0/MVP 的差距（结论：不是 MVP） |
 | `agents/`、`tools/` | Agent 契约与工具 JSON Schema |
+| `appendix/` | 参考代码与测试（可选证据，不是验证主体） |
 
-## 运行
+## 运行（仅附录代码）
 
 ```bash
-cd rehearsal/plot-submit
+cd rehearsal/plot-submit/appendix
 npm install
 npm test        # 17 个用例
 npm run typecheck
