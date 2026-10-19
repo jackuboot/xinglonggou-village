@@ -243,7 +243,7 @@ shared/        types / errors / constants（无业务逻辑）
 ## 十、存量迁移策略
 
 - 工作台现有 JS 不搞一次性重写；新文件用 TS，触碰旧文件时顺带迁移；
-- `roles-admin` 的现有 action（`me/status/bootstrap/list/grant/revoke`）保留为**存量接口**，新接口遵循本规范；
+- `roles-admin` 的现有 action（`me/status/bootstrap/list/grant/revoke`）冻结为**存量接口**，只修 bug 不加能力；新增 REST 门面双轨运行，映射与下线节奏见《开放决策处理记录》D-03；
 - 现有 `user_roles` 表保留；新表按 snake_case 复数命名；
 - 每次迁移在 PR 中标注"无行为变更"。
 
