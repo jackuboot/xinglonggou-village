@@ -1,0 +1,21 @@
+{
+  "name": "five-role-loop-rehearsal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "五角色最小闭环：农户→入库员→消费者→审计员→管理员，验证 RBAC/ABAC 与角色工具范围",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "demo": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
