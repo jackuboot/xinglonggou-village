@@ -1,4 +1,4 @@
-# 工程规范与 AI 编程约定（v0.8）
+# 工程规范与 AI 编程约定（v0.9）
 
 > 阅读顺序与权威优先级：见本目录《00 · 阅读顺序与权威优先级》；冲突时按该文裁决。
 
@@ -47,6 +47,8 @@
 | Agent ID | kebab-case、角色前缀 | `farmer-copilot`、`audit-copilot` |
 | Agent 工具 | `<domain>.<verb>` | `pest.detect`、`knowledge.search` |
 | 错误码 | 大写下划线、域前缀 | `PLOT_DUPLICATE`、`AUTH_UNAUTHORIZED` |
+
+> 云函数内部不使用 `/api/v1` 路径；该路径仅用于外部 HTTP 适配器。云函数入参/返回/身份遵循《接口规范与业务边界》。
 
 ### 领域术语表（唯一合法名称）
 
