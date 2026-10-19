@@ -18,6 +18,7 @@ export interface Plot {
   readonly areaMu: number
   readonly crop: string
   readonly status: 'submitted' | 'active' | 'rejected'
+  readonly submittedAt: string
 }
 
 export interface Batch {
@@ -27,6 +28,7 @@ export interface Batch {
   readonly productName: string
   readonly status: 'available'
   readonly createdBy: string
+  readonly createdAt: string
 }
 
 export interface Booking {
@@ -34,6 +36,22 @@ export interface Booking {
   readonly batchId: string
   readonly consumerUid: string
   readonly status: 'booked'
+  readonly assignedTo?: string
+  readonly createdAt: string
+}
+
+export type AlertType = 'stale_plot' | 'unsold_batch' | 'unassigned_booking'
+export type AlertSeverity = 'warn' | 'critical'
+export type AlertStatus = 'open' | 'acknowledged'
+
+export interface Alert {
+  readonly id: string
+  readonly type: AlertType
+  readonly severity: AlertSeverity
+  readonly targetId: string
+  readonly message: string
+  readonly status: AlertStatus
+  readonly dedupeKey: string
   readonly createdAt: string
 }
 
@@ -64,8 +82,15 @@ export type ToolName =
   | 'trace.list'
   | 'trace.query'
   | 'booking.create'
+  | 'booking.list'
   | 'audit.query'
   | 'system.status'
+  | 'review.suggest'
+  | 'alert.scan'
+  | 'alert.list'
+  | 'alert.ack'
+  | 'dispatch.suggest'
+  | 'dispatch.assign'
 
 export interface Capability {
   readonly roles: readonly Role[]
@@ -81,8 +106,15 @@ export const CAPABILITIES: Record<ToolName, Capability> = {
   'trace.list': { roles: ['consumer', 'keeper', 'auditor', 'admin'], scope: 'public' },
   'trace.query': { roles: ['consumer', 'keeper', 'auditor', 'admin'], scope: 'public' },
   'booking.create': { roles: ['consumer'], scope: 'own' },
+  'booking.list': { roles: ['consumer', 'keeper', 'admin'], scope: 'own' },
   'audit.query': { roles: ['auditor', 'admin'], scope: 'all' },
   'system.status': { roles: ['admin'], scope: 'all' },
+  'review.suggest': { roles: ['keeper', 'admin'], scope: 'village' },
+  'alert.scan': { roles: ['admin'], scope: 'all' },
+  'alert.list': { roles: ['auditor', 'admin'], scope: 'all' },
+  'alert.ack': { roles: ['auditor', 'admin'], scope: 'all' },
+  'dispatch.suggest': { roles: ['keeper', 'admin'], scope: 'village' },
+  'dispatch.assign': { roles: ['keeper', 'admin'], scope: 'village' },
 }
 
 export const TOOL_INPUTS = {
@@ -110,6 +142,18 @@ export const TOOL_INPUTS = {
   'trace.list': z.object({}).strict(),
   'trace.query': z.object({ batchId: z.string().min(1) }).strict(),
   'booking.create': z.object({ batchId: z.string().min(1) }).strict(),
+  'booking.list': z.object({}).strict(),
   'audit.query': z.object({}).strict(),
   'system.status': z.object({}).strict(),
+  'review.suggest': z.object({ plotId: z.string().min(1) }).strict(),
+  'alert.scan': z.object({}).strict(),
+  'alert.list': z.object({}).strict(),
+  'alert.ack': z.object({ alertId: z.string().min(1) }).strict(),
+  'dispatch.suggest': z.object({ bookingId: z.string().min(1) }).strict(),
+  'dispatch.assign': z
+    .object({
+      bookingId: z.string().min(1),
+      assigneeUid: z.string().min(1),
+    })
+    .strict(),
 } as const

@@ -4,7 +4,7 @@
 | --- | --- |
 | [minimal-validation.md](minimal-validation.md) | 最小业务 + 架构设计验证（设计态主文档） |
 | [agri-qa/](agri-qa/README.md) | AI 主链路最小实现：农事问答、RAG、工具网关、人工升级、检查点恢复 |
-| [five-role-loop/](five-role-loop/README.md) | 五角色最小闭环：RBAC/ABAC、跨角色交接、审计、角色助手范围 |
+| [five-role-loop/](five-role-loop/README.md) | 五角色最小闭环：RBAC/ABAC、跨角色交接、审计，含审核建议/预警扫描/调度建议三类主动 Agent |
 | [plot-submit/](plot-submit/README.md) | 地块提交业务切片（设计文档 + 代码附录） |
 
 ## 建议阅读顺序

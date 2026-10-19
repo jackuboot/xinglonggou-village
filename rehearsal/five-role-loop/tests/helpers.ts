@@ -2,8 +2,14 @@ import { createStore, FixedClock, SeqIds } from '../src/adapters/in-memory'
 import { createRoleGateway } from '../src/application/role-gateway'
 import type { Actor } from '../src/domain/types'
 
-export function makeWorld() {
+export function makeWorld(options: { seedKeeper?: boolean } = {}) {
   const store = createStore()
+  if (options.seedKeeper !== false) {
+    store.keepers.set('keeper-001', {
+      uid: 'keeper-001',
+      villageId: 'village-xinglonggou',
+    })
+  }
   const clock = new FixedClock()
   const ids = new SeqIds()
   const gateway = createRoleGateway({ store, clock, ids })

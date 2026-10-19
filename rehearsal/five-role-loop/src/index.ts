@@ -1,11 +1,20 @@
 import { createStore, FixedClock, SeqIds } from './adapters/in-memory'
 import { createRoleGateway } from './application/role-gateway'
 import { askRoleAssistant } from './application/assistant'
-import type { Actor, Batch, Plot } from './domain/types'
+import {
+  runAlertSentinel,
+  runDispatcher,
+  runReviewAgent,
+} from './application/active-agents'
+import type { Actor, Batch, Booking, Plot } from './domain/types'
 import type { Result } from './domain/result'
 import type { DomainError } from './domain/errors'
 
 const store = createStore()
+store.keepers.set('keeper-001', {
+  uid: 'keeper-001',
+  villageId: 'village-xinglonggou',
+})
 const gateway = createRoleGateway({
   store,
   clock: new FixedClock(),
@@ -44,10 +53,33 @@ const batch = value(
 )
 const booking = value(
   (await gateway.invoke(consumer, 'booking.create', { batchId: batch.id })) as Result<
-    unknown,
+    Booking,
     DomainError
   >
 )
+
+const pending = value(
+  (await gateway.invoke(farmer, 'plot.submit', {
+    groupName: '4组',
+    areaMu: 8,
+    crop: '茶',
+  })) as Result<Plot, DomainError>
+)
+const reviewSuggestion = await runReviewAgent(keeper, pending.id, gateway)
+const alerts = await runAlertSentinel(admin, gateway)
+const dispatchSuggestion = await runDispatcher(keeper, booking.id, gateway)
+if (dispatchSuggestion.ok && dispatchSuggestion.value.assigneeUid) {
+  value(
+    (await gateway.invoke(keeper, 'dispatch.assign', {
+      bookingId: booking.id,
+      assigneeUid: dispatchSuggestion.value.assigneeUid,
+    })) as Result<Booking, DomainError>
+  )
+}
+
+console.log('review suggestion:', reviewSuggestion)
+console.log('alerts:', alerts)
+console.log('dispatch suggestion:', dispatchSuggestion)
 const audit = value(
   (await gateway.invoke(auditor, 'audit.query', {})) as Result<unknown[], DomainError>
 )

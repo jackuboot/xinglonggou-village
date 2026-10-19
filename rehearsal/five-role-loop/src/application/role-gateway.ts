@@ -2,6 +2,7 @@ import {
   CAPABILITIES,
   TOOL_INPUTS,
   type Actor,
+  type Alert,
   type AuditEvent,
   type Batch,
   type Booking,
@@ -19,11 +20,16 @@ export interface GatewayDeps {
   readonly ids: { next(prefix?: string): string }
 }
 
+export interface InvokeOptions {
+  readonly agentId?: string
+}
+
 export interface RoleGateway {
   invoke(
     actor: Actor,
     tool: ToolName,
-    input: unknown
+    input: unknown,
+    options?: InvokeOptions
   ): Promise<Result<unknown, DomainError>>
 }
 
@@ -38,43 +44,47 @@ function traceView(batch: Batch, plot: Plot | undefined): TraceView {
   }
 }
 
-/** 角色网关：RBAC（角色）+ ABAC（村/本人）+ 审计。 */
+function hasBooking(store: Store, batchId: string): boolean {
+  return [...store.bookings.values()].some(
+    (booking) => booking.batchId === batchId
+  )
+}
+
+/** 角色网关：RBAC + ABAC + 审计；agentId 用于区分 AI 提议与人工操作。 */
 export function createRoleGateway(deps: GatewayDeps): RoleGateway {
   const { store } = deps
 
   async function audit(
     actor: Actor,
     type: string,
-    payload: Readonly<Record<string, unknown>>
+    payload: Readonly<Record<string, unknown>>,
+    agentId?: string
   ): Promise<void> {
     const event: AuditEvent = {
       id: deps.ids.next('audit'),
       type,
       occurredAt: deps.clock.nowIso(),
       actorUid: actor.uid,
-      payload,
+      payload: { ...payload, ...(agentId ? { agentId } : {}) },
     }
     store.audit.push(event)
   }
 
   return {
-    async invoke(actor, tool, input): Promise<Result<unknown, DomainError>> {
+    async invoke(actor, tool, input, options = {}): Promise<Result<unknown, DomainError>> {
       const capability = CAPABILITIES[tool]
       const allowed = capability.roles.some((role) => actor.roles.includes(role))
       if (!allowed) {
-        await audit(actor, 'access.denied', { tool, reason: 'role' })
+        await audit(actor, 'access.denied', { tool, reason: 'role' }, options.agentId)
         return err(domainError('AUTH_DENIED', `角色无权调用 ${tool}`))
       }
 
       const schema = TOOL_INPUTS[tool]
       const parsed = schema.safeParse(input)
       if (!parsed.success) {
-        await audit(actor, 'access.denied', { tool, reason: 'input' })
+        await audit(actor, 'access.denied', { tool, reason: 'input' }, options.agentId)
         return err(
-          domainError(
-            'INPUT_INVALID',
-            parsed.error.issues[0]?.message ?? '入参不合法'
-          )
+          domainError('INPUT_INVALID', parsed.error.issues[0]?.message ?? '入参不合法')
         )
       }
 
@@ -89,9 +99,10 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
           areaMu: Number(data.areaMu),
           crop: String(data.crop),
           status: 'submitted',
+          submittedAt: deps.clock.nowIso(),
         }
         store.plots.set(plot.id, plot)
-        await audit(actor, 'plot.submitted', { plotId: plot.id })
+        await audit(actor, 'plot.submitted', { plotId: plot.id }, options.agentId)
         return ok(plot)
       }
 
@@ -99,7 +110,7 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
         const plot = store.plots.get(String(data.plotId))
         if (!plot) return err(domainError('PLOT_NOT_FOUND', '地块不存在'))
         if (!actor.roles.includes('admin') && actor.villageId !== plot.villageId) {
-          await audit(actor, 'access.denied', { tool, reason: 'village' })
+          await audit(actor, 'access.denied', { tool, reason: 'village' }, options.agentId)
           return err(domainError('VILLAGE_DENIED', '不能审核其他村的地块'))
         }
         if (plot.status !== 'submitted') {
@@ -113,7 +124,8 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
         await audit(
           actor,
           data.decision === 'approve' ? 'plot.approved' : 'plot.rejected',
-          { plotId: plot.id }
+          { plotId: plot.id },
+          options.agentId
         )
         return ok(next)
       }
@@ -128,7 +140,7 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
         const plot = store.plots.get(String(data.plotId))
         if (!plot) return err(domainError('PLOT_NOT_FOUND', '地块不存在'))
         if (actor.villageId !== plot.villageId) {
-          await audit(actor, 'access.denied', { tool, reason: 'village' })
+          await audit(actor, 'access.denied', { tool, reason: 'village' }, options.agentId)
           return err(domainError('VILLAGE_DENIED', '不能为其他村创建批次'))
         }
         if (plot.status !== 'active') {
@@ -141,9 +153,10 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
           productName: String(data.productName),
           status: 'available',
           createdBy: actor.uid,
+          createdAt: deps.clock.nowIso(),
         }
         store.batches.set(batch.id, batch)
-        await audit(actor, 'batch.created', { batchId: batch.id })
+        await audit(actor, 'batch.created', { batchId: batch.id }, options.agentId)
         return ok(batch)
       }
 
@@ -180,22 +193,180 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
           createdAt: deps.clock.nowIso(),
         }
         store.bookings.set(booking.id, booking)
-        await audit(actor, 'booking.created', {
-          bookingId: booking.id,
-          batchId: batch.id,
-        })
+        await audit(
+          actor,
+          'booking.created',
+          { bookingId: booking.id, batchId: batch.id },
+          options.agentId
+        )
         return ok(booking)
+      }
+
+      if (tool === 'booking.list') {
+        return ok(
+          [...store.bookings.values()].filter((booking) =>
+            actor.roles.includes('consumer')
+              ? booking.consumerUid === actor.uid
+              : true
+          )
+        )
       }
 
       if (tool === 'audit.query') {
         return ok([...store.audit])
       }
 
-      // system.status
+      if (tool === 'review.suggest') {
+        const plot = store.plots.get(String(data.plotId))
+        if (!plot) return err(domainError('PLOT_NOT_FOUND', '地块不存在'))
+        if (!actor.roles.includes('admin') && actor.villageId !== plot.villageId) {
+          await audit(actor, 'access.denied', { tool, reason: 'village' }, options.agentId)
+          return err(domainError('VILLAGE_DENIED', '不能查看其他村的地块'))
+        }
+        const suspicious = plot.areaMu > 50
+        const suggestion = {
+          plotId: plot.id,
+          recommendation: suspicious ? 'reject' : 'approve',
+          confidence: suspicious ? 0.82 : 0.9,
+          reasons: suspicious
+            ? ['面积超过 50 亩，请核对承包合同']
+            : ['字段完整', '面积在常见范围'],
+          requiresHumanDecision: true,
+        }
+        await audit(
+          actor,
+          'review.suggested',
+          { plotId: plot.id, recommendation: suggestion.recommendation },
+          options.agentId
+        )
+        return ok(suggestion)
+      }
+
+      if (tool === 'alert.scan') {
+        const created: Alert[] = []
+        const raise = (
+          type: Alert['type'],
+          targetId: string,
+          message: string,
+          dedupeKey: string
+        ) => {
+          if (store.alerts.has(dedupeKey)) return
+          const alert: Alert = {
+            id: deps.ids.next('alert'),
+            type,
+            severity: type === 'stale_plot' ? 'warn' : 'critical',
+            targetId,
+            message,
+            status: 'open',
+            dedupeKey,
+            createdAt: deps.clock.nowIso(),
+          }
+          store.alerts.set(dedupeKey, alert)
+          created.push(alert)
+        }
+
+        for (const plot of store.plots.values()) {
+          if (plot.status === 'submitted') {
+            raise('stale_plot', plot.id, '地块提交后尚未审核', `stale_plot:${plot.id}`)
+          }
+        }
+        for (const batch of store.batches.values()) {
+          if (!hasBooking(store, batch.id)) {
+            raise('unsold_batch', batch.id, '批次上架后暂无预约', `unsold_batch:${batch.id}`)
+          }
+        }
+        for (const booking of store.bookings.values()) {
+          if (!booking.assignedTo) {
+            raise(
+              'unassigned_booking',
+              booking.id,
+              '预约尚未分配履约人',
+              `unassigned_booking:${booking.id}`
+            )
+          }
+        }
+
+        await audit(
+          actor,
+          'alert.scanned',
+          { created: created.length, open: store.alerts.size },
+          options.agentId
+        )
+        return ok({ created, open: [...store.alerts.values()] })
+      }
+
+      if (tool === 'alert.list') {
+        return ok([...store.alerts.values()])
+      }
+
+      if (tool === 'alert.ack') {
+        const alert = [...store.alerts.values()].find(
+          (item) => item.id === String(data.alertId)
+        )
+        if (!alert) return err(domainError('INPUT_INVALID', '告警不存在'))
+        const next: Alert = { ...alert, status: 'acknowledged' }
+        store.alerts.set(alert.dedupeKey, next)
+        await audit(
+          actor,
+          'alert.acknowledged',
+          { alertId: alert.id },
+          options.agentId
+        )
+        return ok(next)
+      }
+
+      if (tool === 'dispatch.suggest') {
+        const booking = store.bookings.get(String(data.bookingId))
+        if (!booking) return err(domainError('INPUT_INVALID', '预约不存在'))
+        const batch = store.batches.get(booking.batchId)
+        if (!batch) return err(domainError('BATCH_NOT_FOUND', '批次不存在'))
+        const keeper = [...store.keepers.values()].find(
+          (item) => item.villageId === batch.villageId
+        )
+        const suggestion = {
+          bookingId: booking.id,
+          assigneeUid: keeper?.uid ?? null,
+          confidence: keeper ? 0.86 : 0,
+          reason: keeper
+            ? '本村入库员可承接履约'
+            : '本村暂无可用入库员，建议升级人工',
+          requiresHumanDecision: true,
+        }
+        await audit(
+          actor,
+          'dispatch.suggested',
+          { bookingId: booking.id, assigneeUid: suggestion.assigneeUid },
+          options.agentId
+        )
+        return ok(suggestion)
+      }
+
+      if (tool === 'dispatch.assign') {
+        const booking = store.bookings.get(String(data.bookingId))
+        if (!booking) return err(domainError('INPUT_INVALID', '预约不存在'))
+        const batch = store.batches.get(booking.batchId)
+        if (!batch) return err(domainError('BATCH_NOT_FOUND', '批次不存在'))
+        const keeper = store.keepers.get(String(data.assigneeUid))
+        if (!keeper || keeper.villageId !== batch.villageId) {
+          await audit(actor, 'access.denied', { tool, reason: 'village' }, options.agentId)
+          return err(domainError('VILLAGE_DENIED', '只能分配本村入库员'))
+        }
+        const next: Booking = { ...booking, assignedTo: keeper.uid }
+        store.bookings.set(booking.id, next)
+        await audit(
+          actor,
+          'dispatch.assigned',
+          { bookingId: booking.id, assigneeUid: keeper.uid },
+          options.agentId
+        )
+        return ok(next)
+      }
+
       return ok({
         plots: store.plots.size,
         batches: store.batches.size,
         bookings: store.bookings.size,
+        alerts: store.alerts.size,
         auditEvents: store.audit.length,
       })
     },
