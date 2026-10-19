@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>兴隆沟村 · 五角色实时控制台</title>
+    <link rel="stylesheet" href="./styles.css?v=20261019c" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>兴隆沟村 · 五角色实时控制台</h1>
+        <p class="sub">蔬菜批次闭环 · 审核 / 预警 / 调度主动 Agent · 事件实时推送</p>
+      </div>
+      <div class="top-actions">
+        <span id="ai-status" class="badge">AI: 检查中</span>
+        <button id="reset" class="ghost">重置演示数据</button>
+      </div>
+    </header>
+
+    <main class="roles">
+      <section class="pane" data-role="farmer">
+        <div class="pane-head"><span class="dot"></span><h2>农户 · 李桂芳</h2></div>
+        <form id="produce-form" class="form">
+          <label>村组<input name="groupName" value="3组" /></label>
+          <label>蔬菜<input name="vegetableName" value="时令蔬菜" /></label>
+          <label>数量（公斤）<input name="quantityKg" type="number" value="120" min="1" /></label>
+          <label>采收日期<input name="harvestDate" type="date" value="2026-10-18" /></label>
+          <button type="submit">提交蔬菜批次</button>
+        </form>
+        <h3>我的蔬菜</h3>
+        <div id="farmer-produces" class="list"></div>
+      </section>
+
+      <section class="pane" data-role="keeper">
+        <div class="pane-head"><span class="dot"></span><h2>入库员 · 王入库</h2></div>
+        <h3>待审核</h3>
+        <div id="keeper-pending" class="list"></div>
+        <h3>已生效 · 建批次</h3>
+        <div id="keeper-active" class="list"></div>
+        <h3>待派单购买</h3>
+        <div id="keeper-bookings" class="list"></div>
+      </section>
+
+      <section class="pane" data-role="consumer">
+        <div class="pane-head"><span class="dot"></span><h2>消费者 · 张顾客</h2></div>
+        <h3>可购买蔬菜</h3>
+        <div id="consumer-batches" class="list"></div>
+        <h3>溯源结果</h3>
+        <pre id="trace-result" class="trace">点击“溯源”查看公开信息</pre>
+      </section>
+
+      <section class="pane" data-role="auditor">
+        <div class="pane-head"><span class="dot"></span><h2>审计员 · 赵审计</h2></div>
+        <h3>待处置告警</h3>
+        <div id="auditor-alerts" class="list"></div>
+      </section>
+
+      <section class="pane" data-role="admin">
+        <div class="pane-head"><span class="dot"></span><h2>管理员 · 孙管理员</h2></div>
+        <button id="scan-alerts">扫描预警（主动 Agent）</button>
+        <div id="admin-stats" class="stats"></div>
+        <div id="admin-infra" class="infra">存储与队列检查中</div>
+        <button id="drain-queue" class="ghost small">消费事件队列</button>
+        <h3>队列事件</h3>
+        <div id="admin-queue" class="list compact"></div>
+        <h3>审计事件</h3>
+        <div id="admin-audit" class="list compact"></div>
+      </section>
+    </main>
+
+    <section class="feed">
+      <div class="feed-head">
+        <h2>实时事件流</h2>
+        <span id="feed-mode" class="sub">业务动作、AI 建议、越权拒绝都会出现在这里</span>
+      </div>
+      <ol id="event-feed"></ol>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="./config.js?v=20261019c"></script>
+    <script src="./app.js?v=20261019c" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "live-console-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "兴隆沟村五角色实时控制台 CloudBase API（PostgreSQL + 事件队列 + DeepSeek）",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@cloudbase/manager-node": "^5.9.1"
+  }
+}

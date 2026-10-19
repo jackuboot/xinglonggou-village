@@ -18,3 +18,13 @@ design-system/reports/
 .DS_Store
 Thumbs.db
 *.log
+
+# Rehearsal live console secrets
+rehearsal/live-console/.env
+
+# Rehearsal live console runtime data
+rehearsal/live-console/data/
+
+# Rehearsal live console generated hosting bundle and verification screenshots
+rehearsal/live-console/hosting/
+rehearsal/live-console/screenshots/

@@ -1,0 +1,27 @@
+{
+  "name": "live-console",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "五角色同屏实时控制台：蔬菜批次闭环 + SSE + DeepSeek 审核建议",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "typecheck": "tsc --noEmit",
+    "build:hosting": "node scripts/build-hosting.mjs",
+    "smoke:local": "node scripts/smoke.mjs",
+    "smoke:cloud": "node scripts/cloud-smoke.mjs",
+    "smoke:deepseek-cloud": "node scripts/cloud-deepseek.mjs",
+    "test:ai": "node scripts/ai-flow-matrix.mjs",
+    "check:deepseek": "node scripts/check-deepseek.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.8",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

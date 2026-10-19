@@ -1,0 +1,13 @@
+{
+  "envId": "bigfish-2026-d4gixfnab6e09d0f2",
+  "functionRoot": "./cloudfunctions",
+  "functions": [
+    {
+      "name": "live-console-api",
+      "handler": "index.main",
+      "timeout": 60,
+      "memory": 256,
+      "installDependency": true
+    }
+  ]
+}

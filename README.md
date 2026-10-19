@@ -47,6 +47,10 @@ npm run check        # 快照/颜色/图标/对比度门禁 + 单元测试 + 两
 
 两个子项目部署在同一 CloudBase 环境（`bigfish-2026-d4gixfnab6e09d0f2`）；前置依赖与故障排查见 [docs/wiki/04-部署与环境.md](docs/wiki/04-部署与环境.md)。
 
+## 设计预演（非生产）
+
+[`rehearsal/live-console/`](rehearsal/live-console/README.md) 用一条“农户提交蔬菜 → 入库员审核建批次 → 消费者溯源购买 → 调度/预警/审计”的最小业务，验证五角色权限边界、主动 Agent、PostgreSQL 事件队列与 CloudBase 部署：[在线控制台](https://bigfish-2026-d4gixfnab6e09d0f2-1253692163.tcloudbaseapp.com/live/)。固定演示身份，未接登录，不代表生产系统。
+
 ## 文档导航
 
 | 位置 | 内容 | 维护方式 |
