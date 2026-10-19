@@ -1,4 +1,4 @@
-# 工程规范与 AI 编程约定（v0.4）
+# 工程规范与 AI 编程约定（v0.5）
 
 > 目的：让代码对人、对 AI、对工具都**可预测**。命名与字段的一致性不是风格问题，而是可维护性和 Agent 可理解性的基础设施。
 > 适用范围：`web/`、`dashboard/`、`cloudfunctions/`、未来的 Agent 服务与数据管道。
@@ -10,7 +10,8 @@
 | --- | --- | --- | --- |
 | 官网构建脚本 | TypeScript + Node.js | 类型约束、AI 生成质量高、与工作台同语言 | 纯静态构建，不引入框架 |
 | 数字工作台 | **TypeScript + Vue 3 + Vite** | 存量栈延续；类型可被 AI 与工具检查 | 新代码必须 TS，存量 JS 触碰时逐步迁移 |
-| 云函数 / Agent 服务 | **TypeScript on Node.js（CloudBase）** | 与前端共享类型与 schema；部署简单 | 不引入需要常驻进程的框架 |
+| 云函数（请求面） | **TypeScript on Node.js（CloudBase）** | 无状态、短请求、部署简单 | 不承载长会话/流式；不引入常驻进程 |
+| Agent 运行时（运行面） | **TypeScript + LangGraph.js，长驻容器** | 稳定进程、WebSocket/SSE、会话常驻 | 见 ADR-008；CloudBase 云托管优先 |
 | 运行时校验 | **Zod** | schema 即文档、即校验、即类型 | 所有外部输入必须经过 schema |
 | 单元/集成测试 | **Vitest** | 与 Vite 同生态、启动快 | 覆盖纯函数与 schema |
 | E2E 测试 | **Playwright** | 跨浏览器、可录屏、AI 易生成 | 只跑关键路径 |
@@ -21,7 +22,7 @@
 1. 新增代码一律 TypeScript（`strict: true`），禁止新增 `.js` 业务文件；
 2. 不新增框架或大型依赖，除非有 ADR 记录理由与替代方案；
 3. 不引入元编程、隐式魔法或自研 DSL；显式优于聪明；
-4. Python 只用于离线训练、标注、评测，通过文件/接口与业务系统交接。
+4. Python 默认只用于离线训练、标注、评测；若 ADR-007 触发 Python 运行时回退，必须单独 ADR 评审并同步调整本节边界。
 
 ## 二、命名规范（AI 友好）
 
@@ -29,7 +30,9 @@
 
 | 对象 | 规则 | 示例 |
 | --- | --- | --- |
-| 文件 / 目录 | kebab-case | `agent-orchestrator/`、`plot-submit-flow.ts` |
+| 目录 | kebab-case | `agent-orchestrator/` |
+| 普通 TS 文件 | kebab-case | `plot-submit-flow.ts` |
+| Vue 组件文件 | PascalCase | `RoleHome.vue` |
 | 变量 / 函数 | camelCase | `submitPlotDraft`、`getGrantedRoles` |
 | 类型 / 组件 | PascalCase | `PlotDraft`、`RoleHome.vue` |
 | 常量 | SCREAMING_SNAKE_CASE | `MAX_PLOT_AREA` |
@@ -62,7 +65,7 @@
 | Agent 任务 | `agent_task` | job、run | Agent 任务 |
 | 审计记录 | `audit_log` | log、record | 审计记录 |
 
-> 新概念入表后才能写代码；已有代码中的同义名在触碰时收敛。
+> 新概念入表后才能写代码；已有代码中的同义名在触碰时收敛。代码实体名用单数，数据库表名用复数（如 `agent_task` → `agent_tasks`）。
 
 ## 三、错误码与常量
 
@@ -78,6 +81,7 @@
 | ORDER/SERVICE | 4000–4999 | `ORDER_ALREADY_PAID`、`SERVICE_TICKET_CLOSED` |
 | AGENT | 5000–5999 | `AGENT_SCOPE_DENIED`、`AGENT_TOOL_FAILED` |
 | DATA | 6000–6999 | `DATA_SCHEMA_INVALID`、`DATA_LICENSE_MISSING` |
+| CULTURE/KNOWLEDGE | 7000–7999 | `CULTURE_ASSET_NOT_FOUND`、`KNOWLEDGE_ENTRY_INVALID` |
 | SYSTEM | 9000–9999 | `SYSTEM_TIMEOUT`、`SYSTEM_RATE_LIMITED` |
 
 每个错误码必须声明：`code`、`httpStatus`、`retryable`、`messageKey`、`userMessageZh`。错误码只增不改；废弃需标记 `deprecated`。
@@ -103,8 +107,8 @@
 ### 函数式编程约定
 
 1. **纯函数优先**：`domain` 层只做"输入 → 输出"，不读写数据库、网络、时间、随机数；副作用集中在 `adapters`。
-2. **不可变**：不修改入参；使用 `const`、`readonly`、展开运算符；禁止原地修改业务数据（`push/splice/delete`）。
-3. **组合优于继承**：用小函数组合完成业务；不用 class 表达业务模型（Vue 组件除外）。
+2. **不可变**：不修改入参；使用 `const`、`readonly`、展开运算符；禁止原地修改业务数据（`push/splice/delete`）。Vue 响应式容器的原地操作仅限 `ui/` 层。
+3. **组合优于继承**：用小函数组合完成业务；不用 class 表达业务模型（Vue 组件与框架对象如 `StateGraph` 除外）。
 4. **显式依赖**：依赖通过参数注入，不用全局单例、隐式上下文或模块级可变状态。
 5. **错误即值**：业务错误返回 `Result<T, E>`（判别联合），不用异常控制流程；只有基础设施异常可以抛出，并在边界统一转换。
 6. **副作用隔离**：时间、随机数、ID 生成、I/O 都通过接口注入，便于测试、回放与审计。
@@ -160,12 +164,14 @@ shared/        types / errors / constants（无业务逻辑）
 ### 工具与边界
 
 - 所有工具调用经 **工具网关**，白名单来自 Agent 契约卡；禁止直接把任意 LangChain tool 绑定给模型；
+- Checkpointer 属于基础设施适配器，不是工具；使用专用数据库角色，只写 `langgraph_*` 表；
 - 工具参数与返回值必须有 Zod schema；失败返回标准错误码；
+- 节点内部业务错误用 `Result`，向图返回增量；基础设施异常在节点边界转换，不把异常当流程控制；
 - 单次任务设置最大步数、超时与预算，防止图无限循环。
 
 ### 部署与运行时
 
-- 优先 **LangGraph.js（TypeScript）**；若 CloudBase 云函数无法满足流式/长任务，改为容器化 Node 服务；
+- Agent 运行面部署在**长驻容器**（CloudBase 云托管优先，ADR-008）；云函数只承载请求面，不跑图编排；
 - 人工中断不占进程：状态落 PostgreSQL，恢复通过新请求 + 同一 `thread_id`；
 - 版本锁定（lockfile），升级需 ADR 与回归评测。
 
@@ -181,7 +187,7 @@ shared/        types / errors / constants（无业务逻辑）
 
 - **云函数**：只做无状态、短生命周期的请求（CRUD、鉴权、webhook），不承载长会话、流式输出；
 - **Agent 运行时**：长驻容器服务（CloudBase 云托管优先，TKE 备选），支持 WebSocket/SSE，会话在进程内常驻；
-- 两边通过 API/事件通信，运行面不直接暴露数据库写权限。
+- 两边通过 API/事件通信；运行面不向客户端暴露数据库连接，写操作经工具网关/受控适配器；checkpointer 使用专用账号与 `langgraph_*` 表。
 
 ### 会话 Actor
 
@@ -205,13 +211,14 @@ shared/        types / errors / constants（无业务逻辑）
 ### 部署与观测
 
 - 优先 CloudBase 云托管；规模上来再评估 TKE 或腾讯云 Agent Runtime；
+- 云托管可缩容到 0：活跃会话保留最小实例；空闲会话先落检查点再驱逐，恢复时按 `thread_id` 重建；
 - 滚动发布要支持优雅下线（drain）：停止接单、完成在途步骤、落检查点；
 - 每个会话输出 trace：排队时长、每步耗时、检查点大小、心跳与失败原因；
 - 网关统一鉴权，运行时只接受带能力令牌的请求。
 
 ## 八、AI 编程约定
 
-- 模块小而显式：一个文件一个职责，导出类型与函数；
+- 模块小而显式：一个文件一个职责，导出类型与函数（Vue SFC 的 default export 视为该文件主要导出）；
 - 所有公共函数标注输入/输出类型，禁止 `any`；
 - 注释解释"为什么"，不重复"做了什么"；
 - 测试即规格：用例名写清前置、动作、预期；
