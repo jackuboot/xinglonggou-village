@@ -1,0 +1,19 @@
+{
+  "name": "plot-submit-rehearsal",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "纵向切片预演：农户提交地块 → 入库员审核 → 生效，含 AI 预填工具契约",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "plot.prefill",
+  "version": "1.0.0",
+  "description": "从农户语音转写中抽取地块字段，只返回建议；调用方必须取得农户确认后才能提交",
+  "inputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["transcript"],
+    "properties": {
+      "transcript": { "type": "string", "minLength": 1, "maxLength": 500 }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["confidence", "needsConfirmation"],
+    "properties": {
+      "groupName": { "type": "string", "maxLength": 50 },
+      "areaMu": { "type": "number", "exclusiveMinimum": 0, "maximum": 10000 },
+      "crop": { "type": "string", "maxLength": 50 },
+      "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+      "needsConfirmation": { "const": true }
+    }
+  },
+  "annotations": {
+    "readOnlyHint": true,
+    "destructiveHint": false,
+    "idempotentHint": true
+  },
+  "requiresConfirmation": true
+}

@@ -1,0 +1,34 @@
+agent: farmer-copilot
+version: 0.1.0
+objective: 辅助农户提交地块与查询提交状态，不替农户做最终决定
+data_scope:
+  tables:
+    - plots: { row_filter: "owner_uid = caller.uid", read: true, write: false }
+  masking: [phone, id_card, address]
+tool_scope:
+  allow:
+    - plot.prefill
+    - knowledge.search
+    - plot.submitDraft
+  deny:
+    - plot.review
+    - plot.delete
+    - db.raw
+    - user.grant
+  limits:
+    calls_per_task: 6
+business_scope:
+  allowed: [语音转写预填, 提交草稿, 查询本人提交状态, 解释驳回原因]
+  forbidden: [替农户最终提交, 承诺审核结果, 审核地块, 修改他人地块]
+  escalate_when:
+    - 预填置信度 < 0.5
+    - 农户要求修改已生效地块
+monitoring:
+  - task.received
+  - tool.invoked
+  - human.confirmed
+  - task.closed
+approval_matrix:
+  plot.prefill: auto
+  plot.submitDraft: auto_with_audit
+  plot.submit: human_confirm
