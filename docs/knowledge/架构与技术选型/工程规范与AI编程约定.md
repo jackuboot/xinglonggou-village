@@ -1,4 +1,4 @@
-# 工程规范与 AI 编程约定（v0.2）
+# 工程规范与 AI 编程约定（v0.3）
 
 > 目的：让代码对人、对 AI、对工具都**可预测**。命名与字段的一致性不是风格问题，而是可维护性和 Agent 可理解性的基础设施。
 > 适用范围：`web/`、`dashboard/`、`cloudfunctions/`、未来的 Agent 服务与数据管道。
@@ -133,7 +133,49 @@ shared/        types / errors / constants（无业务逻辑）
 
 拆分方法：按"输入解析 → 领域规则 → 副作用 → 输出组装"四段拆；一个文件一个主要导出；文件名体现职责（`plot-submit.ts`、`batch-review.ts`），不用 `helpers.ts` 这类无意义名称。
 
-## 六、AI 编程约定
+## 六、Agent 编排框架约定（LangGraph）
+
+**定位**：LangChain 负责模型与工具适配，**LangGraph 负责图编排、状态、中断与回放**。只允许出现在 `application/orchestration` 层，`domain` 保持框架无关，禁止把 LangChain 类型泄漏到领域模型或 API。
+
+### 状态契约
+
+- 每个 Agent 的 State 用 **Zod schema** 定义，字段必须来自数据字典，禁止临时字段；
+- 合并规则（reducer）显式声明：消息追加、列表追加、值覆盖，不允许隐式合并；
+- State 带 `schema_version`，变更按"只增不删"处理；
+- 框架类型（`MessagesAnnotation` 等）只能在编排层内部使用。
+
+### 线程与记忆
+
+- `thread_id` 规则：`<village_id>:<role>:<user_id>:<conversation_id>`，禁止跨用户或跨角色复用；
+- Checkpointer 使用 **PostgreSQL**（`@langchain/langgraph-checkpoint-postgres`），表统一前缀 `langgraph_`；
+- 对话状态与长期记忆分开：长期记忆进入 `knowledge_entry` / 用户画像，需审核；
+- 检查点含个人信息时必须加密/脱敏，并设定保留期与清理任务。
+
+### 人工介入与回放
+
+- LangGraph 的 `interrupt` 对应蓝图中的审批矩阵：写操作、对外发布、交易相关动作必须中断等人；
+- 恢复执行必须校验操作者权限，并写入审计事件；
+- time travel 只用于审计、调试与故障复现；业务回滚必须走审批，不得直接改写线上状态。
+
+### 工具与边界
+
+- 所有工具调用经 **工具网关**，白名单来自 Agent 契约卡；禁止直接把任意 LangChain tool 绑定给模型；
+- 工具参数与返回值必须有 Zod schema；失败返回标准错误码；
+- 单次任务设置最大步数、超时与预算，防止图无限循环。
+
+### 部署与运行时
+
+- 优先 **LangGraph.js（TypeScript）**；若 CloudBase 云函数无法满足流式/长任务，改为容器化 Node 服务；
+- 人工中断不占进程：状态落 PostgreSQL，恢复通过新请求 + 同一 `thread_id`；
+- 版本锁定（lockfile），升级需 ADR 与回归评测。
+
+### 模块化
+
+- 每个 Agent 一个 graph 定义文件；节点按职责拆分（检索、推理、工具、校验、交付）；
+- 单文件 ≤1000 行、单函数 ≤50 行，与第五节约束一致；
+- 图级测试使用 fake tools，覆盖正常、失败、中断、恢复四条路径。
+
+## 七、AI 编程约定
 
 - 模块小而显式：一个文件一个职责，导出类型与函数；
 - 所有公共函数标注输入/输出类型，禁止 `any`；
@@ -142,7 +184,7 @@ shared/        types / errors / constants（无业务逻辑）
 - Agent 的契约、工具参数、提示词模板都存为 schema/配置文件，不埋在代码字符串里；
 - 不写"聪明"的抽象；可读性优先于复用。
 
-## 七、强制检查（CI / 评审门禁）
+## 八、强制检查（CI / 评审门禁）
 
 | 检查 | 工具 | 门禁 |
 | --- | --- | --- |
@@ -157,14 +199,14 @@ shared/        types / errors / constants（无业务逻辑）
 | 依赖方向 | `import/no-cycle` + dependency-cruiser | 分层违规或循环依赖拒绝合并 |
 | 目录结构 | 评审清单 | 职责不清或垃圾袋目录拒绝合并 |
 
-## 八、存量迁移策略
+## 九、存量迁移策略
 
 - 工作台现有 JS 不搞一次性重写；新文件用 TS，触碰旧文件时顺带迁移；
 - `roles-admin` 的现有 action（`me/status/bootstrap/list/grant/revoke`）保留为**存量接口**，新接口遵循本规范；
 - 现有 `user_roles` 表保留；新表按 snake_case 复数命名；
 - 每次迁移在 PR 中标注"无行为变更"。
 
-## 九、待确认
+## 十、待确认
 
 - 云函数 TS 构建方式（tsc 预编译 or esbuild 打包）；
 - 是否引入共享 types 包（`shared/`）及其发布方式；
