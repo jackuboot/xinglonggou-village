@@ -26,6 +26,7 @@
 | `05-ai-integration.md` | Agent 契约与 `plot.prefill` 工具 |
 | `06-deployment-monitoring.md` | 云函数部署映射与监测点 |
 | `07-acceptance.md` | 验收清单、证据、缺口 |
+| `08-vs-blueprint.md` | 与蓝图 P0/MVP 的差距（结论：不是 MVP） |
 | `agents/`、`tools/` | Agent 契约与工具 JSON Schema |
 
 ## 运行
