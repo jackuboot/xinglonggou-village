@@ -49,7 +49,7 @@ npm run check        # 快照/颜色/图标/对比度门禁 + 单元测试 + 两
 
 ## 设计预演（非生产）
 
-[`rehearsal/live-console/`](rehearsal/live-console/README.md) 用一条“农户提交蔬菜 → 入库员审核建批次 → 消费者溯源购买 → 调度/预警/审计”的最小业务，验证五角色权限边界、主动 Agent、PostgreSQL 事件队列与 CloudBase 部署：[在线控制台](https://bigfish-2026-d4gixfnab6e09d0f2-1253692163.tcloudbaseapp.com/live/)。固定演示身份，未接登录，不代表生产系统。
+[`rehearsal/live-console/`](rehearsal/live-console/README.md) 以一件货物为主线，演示「提交 → AI 审核 → 自动入库上架 → 消费者下单 → AI 派单 → 审计留痕」的货物流转，并加入世界地图、货物自检与异常改道，验证角色边界、AI 审核、PostgreSQL 事件队列与 CloudBase 部署：[在线控制台](https://bigfish-2026-d4gixfnab6e09d0f2-1253692163.tcloudbaseapp.com/live/)。固定演示身份，未接登录，不代表生产系统。
 
 ## 文档导航
 
@@ -57,7 +57,9 @@ npm run check        # 快照/颜色/图标/对比度门禁 + 单元测试 + 两
 | --- | --- | --- |
 | [docs/wiki/](docs/wiki/README.md) | 项目 Wiki：总览、官网、工作台、角色权限、部署、架构流程 | Qoder 定时任务每小时随提交自动更新 |
 | [docs/architecture/](docs/architecture/flow-evidence.md) | 登录/授权流程 PlantUML 时序图、逐段代码证据、风险清单 | 场景分析时更新 |
-| [docs/blueprint/](docs/blueprint/乡村智能系统蓝图-2026.md) | 2026—2028 智能系统蓝图：角色化 Agent 契约、事件架构、场景优先级与三阶段路线图 | 阶段评审时更新 |
+| [docs/blueprint/](docs/blueprint/乡村智能系统蓝图-2026.md) | 2026—2028 智能系统蓝图（v0.5）：战略层与能力目标、角色化 Agent 契约、事件架构、场景优先级与三阶段路线图 | 阶段评审时更新 |
+| [蓝图汇报 PPT（v0.5）](docs/blueprint/兴隆沟村智能系统蓝图汇报-v0.5.pptx) | 15 页汇报版：战略基线、优先级与波动、阶段治理、架构与 90 天计划 | 汇报前更新 |
+| [docs/knowledge/项目治理与路线图/](docs/knowledge/项目治理与路线图/兴隆沟村平台战略基线.md) | 战略基线、战略操作系统、阶段门禁与业务/战略门禁 | 战略评审时更新 |
 | [GitHub Wiki](https://github.com/jackuboot/xinglonggou-village/wiki) | 面向新成员的上手文档：快速开始、部署指南 | 手动维护（与 docs/wiki 互补，不重复深入内容） |
 
 > 深入架构与规则以 `docs/wiki/` 为准；`docs/wiki/` 由自动化任务维护，人工上手教程留在 GitHub Wiki。
