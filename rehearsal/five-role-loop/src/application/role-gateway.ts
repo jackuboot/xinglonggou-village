@@ -13,6 +13,7 @@ import {
 import { domainError, type DomainError } from '../domain/errors'
 import { err, ok, type Result } from '../domain/result'
 import type { Store } from '../adapters/in-memory'
+import { ALERT_RULE_PACK, evaluateAlerts } from './alert-rules'
 
 export interface GatewayDeps {
   readonly store: Store
@@ -43,12 +44,6 @@ function traceView(batch: Batch, produce: Produce | undefined): TraceView {
     harvestDate: produce?.harvestDate ?? '未知',
     batchStatus: batch.status,
   }
-}
-
-function hasBooking(store: Store, batchId: string): boolean {
-  return [...store.bookings.values()].some(
-    (booking) => booking.batchId === batchId
-  )
 }
 
 /** 角色网关：RBAC + ABAC + 审计；agentId 用于区分 AI 提议与人工操作。 */
@@ -148,6 +143,10 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
         if (produce.status !== 'active') {
           return err(domainError('PRODUCE_INVALID_STATUS', '蔬菜批次未生效'))
         }
+        const existing = [...store.batches.values()].find(
+          (batch) => batch.produceId === produce.id
+        )
+        if (existing) return ok(existing)
         const batch: Batch = {
           id: deps.ids.next('batch'),
           produceId: produce.id,
@@ -245,56 +244,94 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
       }
 
       if (tool === 'alert.scan') {
-        const created: Alert[] = []
-        const raise = (
-          type: Alert['type'],
-          targetId: string,
-          message: string,
-          dedupeKey: string
-        ) => {
-          if (store.alerts.has(dedupeKey)) return
-          const alert: Alert = {
-            id: deps.ids.next('alert'),
-            type,
-            severity: type === 'stale_produce' ? 'warn' : 'critical',
-            targetId,
-            message,
-            status: 'open',
-            dedupeKey,
-            createdAt: deps.clock.nowIso(),
-          }
-          store.alerts.set(dedupeKey, alert)
-          created.push(alert)
-        }
+        const asOf =
+          typeof data.asOf === 'string' && data.asOf
+            ? data.asOf
+            : deps.clock.nowIso()
+        const result = evaluateAlerts({
+          produces: [...store.produces.values()],
+          batches: [...store.batches.values()],
+          bookings: [...store.bookings.values()],
+          alerts: [...store.alerts.values()],
+          asOf,
+          nowIso: deps.clock.nowIso(),
+          nextId: (prefix) => deps.ids.next(prefix),
+        })
 
-        for (const produce of store.produces.values()) {
-          if (produce.status === 'submitted') {
-            raise('stale_produce', produce.id, '蔬菜批次提交后尚未审核', `stale_produce:${produce.id}`)
-          }
-        }
-        for (const batch of store.batches.values()) {
-          if (!hasBooking(store, batch.id)) {
-            raise('unsold_batch', batch.id, '批次上架后暂无预约', `unsold_batch:${batch.id}`)
-          }
-        }
-        for (const booking of store.bookings.values()) {
-          if (!booking.assignedTo) {
-            raise(
-              'unassigned_booking',
-              booking.id,
-              '预约尚未分配履约人',
-              `unassigned_booking:${booking.id}`
-            )
-          }
+        for (const alert of [
+          ...result.created,
+          ...result.updated,
+          ...result.resolved,
+        ]) {
+          store.alerts.set(alert.dedupeKey, alert)
         }
 
         await audit(
           actor,
           'alert.scanned',
-          { created: created.length, open: store.alerts.size },
+          {
+            asOf,
+            created: result.created.length,
+            updated: result.updated.length,
+            escalated: result.escalated.length,
+            resolved: result.resolved.length,
+            evaluated: result.evaluated,
+            ruleVersion: ALERT_RULE_PACK.version,
+          },
           options.agentId
         )
-        return ok({ created, open: [...store.alerts.values()] })
+        for (const alert of result.created) {
+          await audit(
+            actor,
+            'alert.raised',
+            {
+              alertId: alert.id,
+              ruleId: alert.ruleId,
+              severity: alert.severity,
+              targetId: alert.targetId,
+              ageMinutes: alert.ageMinutes,
+              asOf,
+            },
+            options.agentId
+          )
+        }
+        for (const event of result.escalated) {
+          await audit(
+            actor,
+            'alert.escalated',
+            {
+              alertId: event.alert.id,
+              ruleId: event.alert.ruleId,
+              from: event.from,
+              to: event.to,
+              asOf,
+            },
+            options.agentId
+          )
+        }
+        for (const alert of result.resolved) {
+          await audit(
+            actor,
+            'alert.resolved',
+            {
+              alertId: alert.id,
+              ruleId: alert.ruleId,
+              reason: alert.resolvedReason,
+              asOf,
+            },
+            options.agentId
+          )
+        }
+
+        return ok({
+          created: result.created,
+          updated: result.updated,
+          escalated: result.escalated,
+          resolved: result.resolved,
+          open: result.open,
+          asOf,
+          ruleVersion: ALERT_RULE_PACK.version,
+        })
       }
 
       if (tool === 'alert.list') {
@@ -306,6 +343,9 @@ export function createRoleGateway(deps: GatewayDeps): RoleGateway {
           (item) => item.id === String(data.alertId)
         )
         if (!alert) return err(domainError('INPUT_INVALID', '告警不存在'))
+        if (alert.status === 'resolved') {
+          return err(domainError('INPUT_INVALID', '告警已自动解除，无需确认'))
+        }
         const next: Alert = { ...alert, status: 'acknowledged' }
         store.alerts.set(alert.dedupeKey, next)
         await audit(

@@ -43,7 +43,9 @@ console.log(
     source: suggestion.data.source,
     recommendation: suggestion.data.recommendation,
     confidence: suggestion.data.confidence,
-    reasons: suggestion.data.reasons,
+    summary: suggestion.data.summary,
+    approveReasons: suggestion.data.approveReasons,
+    rejectReasons: suggestion.data.rejectReasons,
   })
 )
 

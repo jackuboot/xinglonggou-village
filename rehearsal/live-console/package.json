@@ -12,6 +12,7 @@
     "smoke:cloud": "node scripts/cloud-smoke.mjs",
     "smoke:deepseek-cloud": "node scripts/cloud-deepseek.mjs",
     "test:ai": "node scripts/ai-flow-matrix.mjs",
+    "seed:demo": "node scripts/seed-cloud-demo.mjs",
     "check:deepseek": "node scripts/check-deepseek.mjs"
   },
   "dependencies": {

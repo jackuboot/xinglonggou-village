@@ -111,7 +111,7 @@ describe('主动 Agent：审核、预警、调度', () => {
     expect(suggestion.reasons[0]).toContain('数量')
   })
 
-  it('预警哨兵主动扫描并去重；审计员可确认告警', async () => {
+  it('预警哨兵按时间窗扫描并去重；审计员可确认告警', async () => {
     const world = makeWorld()
     const produce = value(
       (await world.gateway.invoke(world.actors.farmer, 'produce.submit', {
@@ -122,13 +122,16 @@ describe('主动 Agent：审核、预警、调度', () => {
       })) as Result<Produce, DomainError>
     )
 
-    const first = value(await runAlertSentinel(world.actors.admin, world.gateway))
+    const asOf = '2026-10-19T03:00:00.000Z'
+    const first = value(
+      await runAlertSentinel(world.actors.admin, world.gateway, asOf)
+    )
     expect(first.created.length).toBeGreaterThan(0)
-    expect(
-      world.store.alerts.size
-    ).toBeGreaterThan(0)
+    expect(world.store.alerts.size).toBeGreaterThan(0)
 
-    const second = value(await runAlertSentinel(world.actors.admin, world.gateway))
+    const second = value(
+      await runAlertSentinel(world.actors.admin, world.gateway, asOf)
+    )
     expect(second.created.length).toBe(0)
 
     const alerts = value(
@@ -147,6 +150,85 @@ describe('主动 Agent：审核、预警、调度', () => {
       })) as Result<Alert, DomainError>
     )
     expect(acked.status).toBe('acknowledged')
+  })
+
+  it('上架不足 24 小时不报滞销；超时升级，订单出现后自动解除', async () => {
+    const world = makeWorld()
+    const produce = value(
+      (await world.gateway.invoke(world.actors.farmer, 'produce.submit', {
+        groupName: '6组',
+        vegetableName: '土豆',
+        quantityKg: 200,
+        harvestDate: '2026-10-18',
+      })) as Result<Produce, DomainError>
+    )
+    value(
+      (await world.gateway.invoke(world.actors.keeper, 'produce.review', {
+        produceId: produce.id,
+        decision: 'approve',
+      })) as Result<Produce, DomainError>
+    )
+    const batch = value(
+      (await world.gateway.invoke(world.actors.keeper, 'batch.create', {
+        produceId: produce.id,
+        productName: '土豆',
+      })) as Result<Batch, DomainError>
+    )
+
+    const early = value(
+      await runAlertSentinel(
+        world.actors.admin,
+        world.gateway,
+        '2026-10-19T00:30:00.000Z'
+      )
+    )
+    expect(early.created.length).toBe(0)
+
+    const warning = value(
+      await runAlertSentinel(
+        world.actors.admin,
+        world.gateway,
+        '2026-10-20T01:00:00.000Z'
+      )
+    )
+    const unsold = warning.created.find(
+      (item) => (item as Alert).type === 'unsold_batch'
+    ) as Alert | undefined
+    expect(unsold).toBeDefined()
+    if (!unsold) return
+    expect(unsold.severity).toBe('warn')
+    expect(unsold.ageMinutes).toBeGreaterThanOrEqual(1440)
+    expect(unsold.thresholdMinutes).toBe(1440)
+
+    const critical = value(
+      await runAlertSentinel(
+        world.actors.admin,
+        world.gateway,
+        '2026-10-22T01:00:00.000Z'
+      )
+    )
+    const escalated = (critical.escalated || []).find(
+      (item) => (item as { alert: Alert }).alert.type === 'unsold_batch'
+    ) as { to: string } | undefined
+    expect(escalated?.to).toBe('critical')
+
+    value(
+      (await world.gateway.invoke(world.actors.consumer, 'booking.create', {
+        batchId: batch.id,
+      })) as Result<Booking, DomainError>
+    )
+    const resolved = value(
+      await runAlertSentinel(
+        world.actors.admin,
+        world.gateway,
+        '2026-10-22T01:10:00.000Z'
+      )
+    )
+    expect(
+      (resolved.resolved || []).some(
+        (item) => (item as Alert).type === 'unsold_batch'
+      )
+    ).toBe(true)
   })
 
   it('调度 Agent 只给建议；人工确认后才写入 assignedTo', async () => {

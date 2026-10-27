@@ -6,7 +6,7 @@
 | [event-walkthrough.md](event-walkthrough.md) | 五角色+主动 Agent 的完整事件预演文本（推荐先读） |
 | [agri-qa/](agri-qa/README.md) | AI 主链路最小实现：农事问答、RAG、工具网关、人工升级、检查点恢复 |
 | [five-role-loop/](five-role-loop/README.md) | 五角色最小闭环：RBAC/ABAC、跨角色交接、审计，含审核建议/预警扫描/调度建议三类主动 Agent |
-| [live-console/](live-console/README.md) | 五角色同屏实时控制台：CloudBase 函数 + PostgreSQL + 事件队列 + 静态 UI，含 DeepSeek 审核入口 |
+| [live-console/](live-console/README.md) | 货物流转实时控制台：以一件货物为主线，AI 沿路生成审核/入库/上架/溯源/订单/审计数据；含世界地图、自检改道与 CloudBase 部署 |
 | [plot-submit/](plot-submit/README.md) | 地块提交业务切片（设计文档 + 代码附录） |
 
 ## 建议阅读顺序

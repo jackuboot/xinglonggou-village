@@ -87,14 +87,21 @@ for (const scenario of scenarios) {
     model: suggestion.data.model,
     confidence: suggestion.data.confidence,
     elapsedMs: Date.now() - started,
-    reasons: suggestion.data.reasons,
+    summary: suggestion.data.summary,
+    approveReasons: suggestion.data.approveReasons,
+    rejectReasons: suggestion.data.rejectReasons,
   }
   results.push(result)
   console.log(
     `${result.name}: ${result.actual} (expected ${result.expected}) ` +
       `| ${result.source}/${result.model} | ${result.elapsedMs}ms | ${result.confidence}`
   )
-  console.log(`  ${result.reasons.join('；')}`)
+  const primary =
+    result.actual === 'approve' ? result.approveReasons : result.rejectReasons
+  const opposite =
+    result.actual === 'approve' ? result.rejectReasons : result.approveReasons
+  console.log(`  建议理由：${(primary || []).join('；') || '无'}`)
+  console.log(`  反方参考：${(opposite || []).join('；') || '无'}`)
   console.log('')
 }
 

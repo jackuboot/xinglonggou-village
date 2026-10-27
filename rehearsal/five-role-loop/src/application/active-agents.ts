@@ -21,7 +21,12 @@ export interface DispatchSuggestion {
 
 export interface AlertScanResult {
   readonly created: readonly unknown[]
+  readonly updated?: readonly unknown[]
+  readonly escalated?: readonly unknown[]
+  readonly resolved?: readonly unknown[]
   readonly open: readonly unknown[]
+  readonly asOf?: string
+  readonly ruleVersion?: string
 }
 
 /**
@@ -44,16 +49,18 @@ export async function runReviewAgent(
 }
 
 /**
- * 预警哨兵：主动扫描并创建告警（低风险写），重复扫描按 dedupeKey 去重。
+ * 预警哨兵：按规则包主动扫描；asOf 用于回放/模拟时间，
+ * 重复扫描按 dedupeKey 去重，条件解除时自动 resolved。
  */
 export async function runAlertSentinel(
   actor: Actor,
-  gateway: RoleGateway
+  gateway: RoleGateway,
+  asOf?: string
 ): Promise<Result<AlertScanResult, DomainError>> {
   const result = await gateway.invoke(
     actor,
     'alert.scan',
-    {},
+    asOf ? { asOf } : {},
     { agentId: 'alert-sentinel' }
   )
   if (!result.ok) return result

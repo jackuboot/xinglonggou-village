@@ -10,6 +10,7 @@
 const crypto = require('crypto')
 const store = require('./store')
 const deepseek = require('./deepseek')
+const { ALERT_RULE_PACK, evaluateAlerts } = require('./alert-rules')
 
 const VILLAGE = 'village-xinglonggou'
 
@@ -153,6 +154,7 @@ async function snapshot() {
       entities: 'lc_entities',
       queue: 'lc_events',
     },
+    alertRules: ALERT_RULE_PACK,
     queue,
   }
 }
@@ -230,6 +232,9 @@ async function suggestReview(body) {
       recommendation: suggestion.recommendation,
       confidence: suggestion.confidence,
       source: suggestion.source,
+      summary: suggestion.summary,
+      approveReasons: suggestion.approveReasons,
+      rejectReasons: suggestion.rejectReasons,
     },
     suggestion.source === 'deepseek' ? 'deepseek-review-agent' : 'rule-review-agent'
   )
@@ -247,6 +252,9 @@ async function createBatch(actor, body) {
   if (produce.status !== 'active') {
     throw new DomainError('PRODUCE_INVALID_STATUS', '蔬菜批次未生效')
   }
+  const batches = await store.list('batch')
+  const existing = batches.find((batch) => batch.produceId === produce.id)
+  if (existing) return existing
   const batch = {
     id: newId('batch'),
     produceId: produce.id,
@@ -340,7 +348,7 @@ async function assignDispatch(actor, body) {
   return next
 }
 
-async function scanAlerts() {
+async function scanAlerts(body = {}) {
   const actor = ACTORS.admin
   const [produces, batches, bookings, existing] = await Promise.all([
     store.list('produce'),
@@ -348,61 +356,91 @@ async function scanAlerts() {
     store.list('booking'),
     store.list('alert'),
   ])
-  const dedupe = new Set(existing.map((item) => item.dedupeKey))
-  const created = []
-
-  async function raise(type, targetId, message, severity) {
-    const dedupeKey = `${type}:${targetId}`
-    if (dedupe.has(dedupeKey)) return
-    dedupe.add(dedupeKey)
-    const alert = {
-      id: newId('alert'),
-      type,
-      severity,
-      targetId,
-      message,
-      status: 'open',
-      dedupeKey,
-      createdAt: nowIso(),
-    }
-    await store.put('alert', alert.id, alert)
-    created.push(alert)
-  }
-
-  const bookedBatches = new Set(bookings.map((item) => item.batchId))
-  for (const produce of produces) {
-    if (produce.status === 'submitted') {
-      await raise(
-        'stale_produce',
-        produce.id,
-        '蔬菜批次提交后尚未审核',
-        'warn'
-      )
-    }
-  }
-  for (const batch of batches) {
-    if (!bookedBatches.has(batch.id)) {
-      await raise('unsold_batch', batch.id, '批次上架后暂无预约', 'critical')
-    }
-  }
-  for (const booking of bookings) {
-    if (!booking.assignedTo) {
-      await raise(
-        'unassigned_booking',
-        booking.id,
-        '预约尚未分配履约人',
-        'critical'
-      )
-    }
-  }
-
-  await audit(actor, 'alert.scanned', {
-    created: created.length,
-    open: existing.length + created.length,
+  const asOf =
+    typeof body.asOf === 'string' && body.asOf ? body.asOf : nowIso()
+  const result = evaluateAlerts({
+    produces,
+    batches,
+    bookings,
+    alerts: existing,
+    asOf,
+    nowIso: nowIso(),
+    nextId: (prefix) => newId(prefix),
   })
+
+  for (const alert of [
+    ...result.created,
+    ...result.updated,
+    ...result.resolved,
+  ]) {
+    await store.put('alert', alert.id, alert)
+  }
+
+  await audit(
+    actor,
+    'alert.scanned',
+    {
+      asOf,
+      created: result.created.length,
+      updated: result.updated.length,
+      escalated: result.escalated.length,
+      resolved: result.resolved.length,
+      evaluated: result.evaluated,
+      ruleVersion: ALERT_RULE_PACK.version,
+    },
+    'alert-sentinel'
+  )
+  for (const alert of result.created) {
+    await audit(
+      actor,
+      'alert.raised',
+      {
+        alertId: alert.id,
+        ruleId: alert.ruleId,
+        severity: alert.severity,
+        targetId: alert.targetId,
+        ageMinutes: alert.ageMinutes,
+        asOf,
+      },
+      'alert-sentinel'
+    )
+  }
+  for (const event of result.escalated) {
+    await audit(
+      actor,
+      'alert.escalated',
+      {
+        alertId: event.alert.id,
+        ruleId: event.alert.ruleId,
+        from: event.from,
+        to: event.to,
+        asOf,
+      },
+      'alert-sentinel'
+    )
+  }
+  for (const alert of result.resolved) {
+    await audit(
+      actor,
+      'alert.resolved',
+      {
+        alertId: alert.id,
+        ruleId: alert.ruleId,
+        reason: alert.resolvedReason,
+        asOf,
+      },
+      'alert-sentinel'
+    )
+  }
+
   return {
-    created,
-    open: [...existing, ...created],
+    created: result.created,
+    updated: result.updated,
+    escalated: result.escalated,
+    resolved: result.resolved,
+    open: result.open,
+    asOf,
+    ruleVersion: ALERT_RULE_PACK.version,
   }
 }
 
@@ -412,6 +450,9 @@ async function ackAlert(body) {
   const alerts = await store.list('alert')
   const alert = alerts.find((item) => item.id === alertId)
   if (!alert) throw new DomainError('INPUT_INVALID', '告警不存在')
+  if (alert.status === 'resolved') {
+    throw new DomainError('INPUT_INVALID', '告警已自动解除，无需确认')
+  }
   const next = { ...alert, status: 'acknowledged' }
   await store.put('alert', next.id, next)
   await audit(actor, 'alert.acknowledged', { alertId: next.id })
@@ -470,7 +511,7 @@ async function dispatchAction(action, body = {}) {
     return ok(data)
   }
   if (action === 'admin.scan') {
-    const data = await scanAlerts()
+    const data = await scanAlerts(body)
     await store.drainQueue(20)
     return ok(data)
   }

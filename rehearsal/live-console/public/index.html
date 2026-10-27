@@ -3,14 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>兴隆沟村 · 五角色实时控制台</title>
-    <link rel="stylesheet" href="./styles.css?v=20261019c" />
+    <title>兴隆沟村 · 货物流转控制台</title>
+    <link rel="stylesheet" href="./styles.css?v=20261019o" />
   </head>
   <body>
     <header class="topbar">
       <div>
-        <h1>兴隆沟村 · 五角色实时控制台</h1>
-        <p class="sub">蔬菜批次闭环 · 审核 / 预警 / 调度主动 Agent · 事件实时推送</p>
+        <h1>兴隆沟村 · 货物流转控制台</h1>
+        <p class="sub">
+          以一件货物为主线 · AI 沿路生成业务数据 · 人只在审核节点拍板
+        </p>
       </div>
       <div class="top-actions">
         <span id="ai-status" class="badge">AI: 检查中</span>
@@ -18,67 +20,73 @@
       </div>
     </header>
 
-    <main class="roles">
-      <section class="pane" data-role="farmer">
-        <div class="pane-head"><span class="dot"></span><h2>农户 · 李桂芳</h2></div>
-        <form id="produce-form" class="form">
+    <section id="summary" class="summary" aria-label="货物阶段统计"></section>
+
+    <main class="goods-layout">
+      <aside class="goods-side">
+        <div class="side-head">
+          <div>
+            <h2>货物清单</h2>
+            <p class="sub">点一件货物，看它走到哪、下一步做什么</p>
+          </div>
+          <button id="toggle-submit" class="secondary small">新增货物</button>
+        </div>
+        <form id="produce-form" class="form submit-form" hidden>
           <label>村组<input name="groupName" value="3组" /></label>
-          <label>蔬菜<input name="vegetableName" value="时令蔬菜" /></label>
+          <label>蔬菜<input name="vegetableName" value="大白菜" /></label>
           <label>数量（公斤）<input name="quantityKg" type="number" value="120" min="1" /></label>
-          <label>采收日期<input name="harvestDate" type="date" value="2026-10-18" /></label>
-          <button type="submit">提交蔬菜批次</button>
+          <label>采收日期<input name="harvestDate" type="date" value="2026-10-19" /></label>
+          <button type="submit">提交并由 AI 生成审核建议</button>
+          <p class="form-note">提交后系统自动生成货物档案；审核通过后自动生成入库单与上架批次。</p>
         </form>
-        <h3>我的蔬菜</h3>
-        <div id="farmer-produces" class="list"></div>
-      </section>
+        <div id="goods-list" class="goods-list"></div>
+      </aside>
 
-      <section class="pane" data-role="keeper">
-        <div class="pane-head"><span class="dot"></span><h2>入库员 · 王入库</h2></div>
-        <h3>待审核</h3>
-        <div id="keeper-pending" class="list"></div>
-        <h3>已生效 · 建批次</h3>
-        <div id="keeper-active" class="list"></div>
-        <h3>待派单购买</h3>
-        <div id="keeper-bookings" class="list"></div>
-      </section>
+      <section id="goods-detail" class="goods-detail"></section>
+    </main>
 
-      <section class="pane" data-role="consumer">
-        <div class="pane-head"><span class="dot"></span><h2>消费者 · 张顾客</h2></div>
-        <h3>可购买蔬菜</h3>
-        <div id="consumer-batches" class="list"></div>
-        <h3>溯源结果</h3>
-        <pre id="trace-result" class="trace">点击“溯源”查看公开信息</pre>
-      </section>
-
-      <section class="pane" data-role="auditor">
-        <div class="pane-head"><span class="dot"></span><h2>审计员 · 赵审计</h2></div>
-        <h3>待处置告警</h3>
+    <section class="ops">
+      <div class="ops-panel">
+        <div class="ops-head">
+          <h2>审计与预警</h2>
+          <div class="ops-tools">
+            <select id="scan-offset" class="scan-offset" aria-label="扫描时间">
+              <option value="0">当前时间</option>
+              <option value="60">1 小时后</option>
+              <option value="1440">24 小时后</option>
+              <option value="4320">72 小时后</option>
+            </select>
+            <button id="scan-alerts" class="secondary small">扫描预警</button>
+          </div>
+        </div>
         <div id="auditor-alerts" class="list"></div>
-      </section>
-
-      <section class="pane" data-role="admin">
-        <div class="pane-head"><span class="dot"></span><h2>管理员 · 孙管理员</h2></div>
-        <button id="scan-alerts">扫描预警（主动 Agent）</button>
+        <details id="alert-rule-book" class="rule-book">
+          <summary id="alert-rule-summary">预警规则</summary>
+          <div id="alert-rule-list" class="rule-list"></div>
+        </details>
+      </div>
+      <div class="ops-panel">
+        <div class="ops-head">
+          <h2>运行状态</h2>
+          <button id="drain-queue" class="ghost small">消费队列</button>
+        </div>
         <div id="admin-stats" class="stats"></div>
         <div id="admin-infra" class="infra">存储与队列检查中</div>
-        <button id="drain-queue" class="ghost small">消费事件队列</button>
         <h3>队列事件</h3>
         <div id="admin-queue" class="list compact"></div>
-        <h3>审计事件</h3>
-        <div id="admin-audit" class="list compact"></div>
-      </section>
-    </main>
+      </div>
+    </section>
 
     <section class="feed">
       <div class="feed-head">
-        <h2>实时事件流</h2>
-        <span id="feed-mode" class="sub">业务动作、AI 建议、越权拒绝都会出现在这里</span>
+        <h2>全局事件流</h2>
+        <span id="feed-mode" class="sub">业务动作、AI 建议、审计留痕都会出现在这里</span>
       </div>
       <ol id="event-feed"></ol>
     </section>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script src="./config.js?v=20261019c"></script>
-    <script src="./app.js?v=20261019c" type="module"></script>
+    <script src="./config.js?v=20261019o"></script>
+    <script src="./app.js?v=20261019o" type="module"></script>
   </body>
 </html>

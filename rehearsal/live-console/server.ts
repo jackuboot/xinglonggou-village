@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { createStore } from '../five-role-loop/src/adapters/in-memory'
 import { createRoleGateway } from '../five-role-loop/src/application/role-gateway'
 import { runAlertSentinel, runDispatcher } from '../five-role-loop/src/application/active-agents'
+import { ALERT_RULE_PACK } from '../five-role-loop/src/application/alert-rules'
 import type {
   Actor,
   Alert,
@@ -131,6 +132,7 @@ function snapshot() {
       deepseekConfigured: deepSeekConfigured(),
       model: process.env.DEEPSEEK_MODEL ?? 'deepseek-chat',
     },
+    alertRules: ALERT_RULE_PACK,
   }
 }
 
@@ -235,6 +237,9 @@ app.post('/api/keeper/review-ai', async (req, res, next) => {
           suggestion.source === 'deepseek' ? 'deepseek-review-agent' : 'rule-review-agent',
         source: suggestion.source,
         confidence: suggestion.confidence,
+        summary: suggestion.summary,
+        approveReasons: suggestion.approveReasons,
+        rejectReasons: suggestion.rejectReasons,
       },
     }
     world.store.audit.push(auditEvent)
@@ -310,10 +315,12 @@ app.post('/api/keeper/assign', async (req, res, next) => {
   }
 })
 
-app.post('/api/admin/scan', async (_req, res, next) => {
+app.post('/api/admin/scan', async (req, res, next) => {
   try {
+    const asOf =
+      typeof req.body?.asOf === 'string' ? req.body.asOf : undefined
     const result = await runAction(() =>
-      runAlertSentinel(world.actors.admin, world.gateway)
+      runAlertSentinel(world.actors.admin, world.gateway, asOf)
     )
     sendResult(res, result)
   } catch (error) {

@@ -43,7 +43,7 @@ export interface Booking {
 
 export type AlertType = 'stale_produce' | 'unsold_batch' | 'unassigned_booking'
 export type AlertSeverity = 'warn' | 'critical'
-export type AlertStatus = 'open' | 'acknowledged'
+export type AlertStatus = 'open' | 'acknowledged' | 'resolved'
 
 export interface Alert {
   readonly id: string
@@ -54,6 +54,16 @@ export interface Alert {
   readonly status: AlertStatus
   readonly dedupeKey: string
   readonly createdAt: string
+  readonly ruleId?: string
+  readonly ruleVersion?: number
+  readonly ageMinutes?: number
+  readonly thresholdMinutes?: number
+  readonly observedAt?: string
+  readonly asOf?: string
+  readonly suggestedAction?: string
+  readonly ownerRole?: Role
+  readonly resolvedAt?: string
+  readonly resolvedReason?: string
 }
 
 export interface AuditEvent {
@@ -149,7 +159,7 @@ export const TOOL_INPUTS = {
   'audit.query': z.object({}).strict(),
   'system.status': z.object({}).strict(),
   'review.suggest': z.object({ produceId: z.string().min(1) }).strict(),
-  'alert.scan': z.object({}).strict(),
+  'alert.scan': z.object({ asOf: z.string().optional() }).strict(),
   'alert.list': z.object({}).strict(),
   'alert.ack': z.object({ alertId: z.string().min(1) }).strict(),
   'dispatch.suggest': z.object({ bookingId: z.string().min(1) }).strict(),
